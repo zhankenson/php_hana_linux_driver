@@ -8,8 +8,9 @@ Install PHP on your Linux env:
 * install php and php-devel, make sure the php version between 7.* and 8.0
 * gcc version must be grater than 4.9 (for php version > 7.2)
 
-Configure odbc library:
-* install HANA client to /usr/sap/hdbclient, configure path /usr/sap/hdbclient to environment parameter LD_LIBRARY_PATH and LIBRARY_PATH to make sure odbc shared library libodbcHDB.so can be used during run and compile.
+## Configure odbc library:
+* install HANA client to /usr/sap/hdbclient
+* configure path /usr/sap/hdbclient to environment parameter LD_LIBRARY_PATH and LIBRARY_PATH to make sure odbc shared library libodbcHDB.so can be used during run and compile.
 
 ## Building and Installing the php extension
 * fetch project, enter the project directory
