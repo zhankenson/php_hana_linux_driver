@@ -533,14 +533,14 @@ PHP_MINIT_FUNCTION(hdb)
         }
     }
 
-    if( php_register_url_stream_wrapper( HDB_STREAM_WRAPPER, &g_hdb_stream_wrapper TSRMLS_CC ) == FAILURE ) {
+    if( php_register_url_stream_wrapper( HDB_STREAM_WRAPPER, &g_hdb_stream_wrapper ) == FAILURE ) {
         LOG( SEV_ERROR, "%1!s!: stream registration failed", _FN_ );
         return FAILURE;
     }
 
     try {
         // retrieve the handles for the environments
-        core_hdb_minit( &g_ss_henv_cp, &g_ss_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for hdb" TSRMLS_CC );
+        core_hdb_minit( &g_ss_henv_cp, &g_ss_henv_ncp, ss_error_handler, "PHP_MINIT_FUNCTION for hdb" );
     }
 
     catch( core::CoreException& ) {
@@ -592,7 +592,7 @@ PHP_MSHUTDOWN_FUNCTION(hdb)
 
     core_hdb_mshutdown( *g_ss_henv_cp, *g_ss_henv_ncp );
 
-    if( php_unregister_url_stream_wrapper( HDB_STREAM_WRAPPER TSRMLS_CC ) == FAILURE ) {
+    if( php_unregister_url_stream_wrapper( HDB_STREAM_WRAPPER ) == FAILURE ) {
         return FAILURE;
     }
 
@@ -655,7 +655,7 @@ PHP_RSHUTDOWN_FUNCTION(hdb)
     HDB_UNUSED( type );
 
     LOG_FUNCTION( "PHP_RSHUTDOWN for php_hdb" );
-    reset_errors( TSRMLS_C );
+    reset_errors( );
 
 	// TODO - destruction
     zval_ptr_dtor( &HDB_G( errors ));

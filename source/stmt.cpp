@@ -80,20 +80,20 @@ const char SS_HDB_WARNING_PARAM_VAR_NOT_REF[] = "Variable parameter %d not passe
 void convert_to_zval( _Inout_ hdb_stmt* stmt, _In_ HDB_PHPTYPE hdb_php_type, _In_opt_ void* in_val, _In_ SQLLEN field_len, _Inout_ zval& out_zval );
 
 void fetch_fields_common( _Inout_ ss_hdb_stmt* stmt, _In_ zend_long fetch_type, _Out_ zval& fields, _In_ bool allow_empty_field_names
-						TSRMLS_DC );
+						);
 bool determine_column_size_or_precision( hdb_stmt const* stmt, _In_ hdb_sqltype hdb_type, _Inout_ SQLULEN* column_size,
  _Out_ SQLSMALLINT* decimal_digits );
 hdb_phptype determine_hdb_php_type( hdb_stmt const* stmt, SQLINTEGER sql_type, SQLUINTEGER size, bool prefer_string );
-void determine_stmt_has_rows( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC );
+void determine_stmt_has_rows( _Inout_ ss_hdb_stmt* stmt );
 bool is_valid_hdb_phptype( _In_ hdb_phptype type );
 bool is_valid_hdb_sqltype( _In_ hdb_sqltype type );
 void parse_param_array( _Inout_ ss_hdb_stmt* stmt, _Inout_ zval* param_array, zend_ulong index, _Out_ SQLSMALLINT& direction,
                         _Out_ HDB_PHPTYPE& php_out_type, _Out_ HDB_ENCODING& encoding, _Out_ SQLSMALLINT& sql_type, 
-                        _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits TSRMLS_DC );
+                        _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits );
 void type_and_encoding( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
 void type_and_size_calc( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
 void type_and_precision_calc( INTERNAL_FUNCTION_PARAMETERS, _In_ int type );
-bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ hdb_phptype& phptype_encoding TSRMLS_DC );
+bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ hdb_phptype& phptype_encoding );
 
 }
 
@@ -107,15 +107,15 @@ namespace SSCursorTypes {
     const char QUERY_OPTION_SCROLLABLE_BUFFERED[] = "buffered";
 }
 
-ss_hdb_stmt::ss_hdb_stmt( _In_ hdb_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv TSRMLS_DC ) :
-    hdb_stmt( c, handle, e, drv TSRMLS_CC ),
+ss_hdb_stmt::ss_hdb_stmt( _In_ hdb_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv ) :
+    hdb_stmt( c, handle, e, drv),
     prepared( false ),
     conn_index( -1 ),
     params_z( NULL ),
     fetch_field_names( NULL ),
     fetch_fields_count ( 0 )
 {
-    core_hdb_set_buffered_query_limit( this, HDB_G( buffered_query_limit ) TSRMLS_CC );
+    core_hdb_set_buffered_query_limit( this, HDB_G( buffered_query_limit ));
 }
 
 ss_hdb_stmt::~ss_hdb_stmt( void )
@@ -136,7 +136,7 @@ ss_hdb_stmt::~ss_hdb_stmt( void )
 
 // to be called whenever a new result set is created, such as after an
 // execute or next_result.  Resets the state variables and calls the subclass.
-void ss_hdb_stmt::new_result_set( TSRMLS_D ) 
+void ss_hdb_stmt::new_result_set( ) 
 {
     if( fetch_field_names != NULL ) {
 
@@ -149,7 +149,7 @@ void ss_hdb_stmt::new_result_set( TSRMLS_D )
 
     fetch_field_names = NULL;
     fetch_fields_count = 0;
-    hdb_stmt::new_result_set( TSRMLS_C );
+    hdb_stmt::new_result_set( );
 }
 
 // Returns a php type for a given sql type. Also sets the encoding wherever applicable. 
@@ -279,14 +279,14 @@ PHP_FUNCTION( hdb_execute )
             // to prepare to execute the next statement, we skip any remaining results (and skip parameter finalization too)
             while( stmt->past_next_result_end == false ) {
 
-                core_hdb_next_result( stmt TSRMLS_CC, false, false );
+                core_hdb_next_result( stmt, false, false );
             }
         }
 
         // bind parameters before executing
-        bind_params( stmt TSRMLS_CC );
+        bind_params( stmt);
 
-        core_hdb_execute( stmt TSRMLS_CC );
+        core_hdb_execute( stmt);
 		
         RETURN_TRUE;
     }
@@ -335,7 +335,7 @@ PHP_FUNCTION( hdb_fetch )
             throw ss::SSException();
         }
 
-        bool result = core_hdb_fetch( stmt, static_cast<SQLSMALLINT>(fetch_style), fetch_offset TSRMLS_CC );
+        bool result = core_hdb_fetch( stmt, static_cast<SQLSMALLINT>(fetch_style), fetch_offset);
         if( !result ) {
             RETURN_NULL();
         }
@@ -394,13 +394,13 @@ PHP_FUNCTION( hdb_fetch_array )
             throw ss::SSException();
         }
 
-        bool result = core_hdb_fetch( stmt, static_cast<SQLSMALLINT>(fetch_style), fetch_offset TSRMLS_CC );
+        bool result = core_hdb_fetch( stmt, static_cast<SQLSMALLINT>(fetch_style), fetch_offset);
         if( !result ) {
             RETURN_NULL();
         }
 		zval fields;
 		ZVAL_UNDEF( &fields );
-        fetch_fields_common( stmt, fetch_type, fields, true /*allow_empty_field_names*/ TSRMLS_CC );
+        fetch_fields_common( stmt, fetch_type, fields, true /*allow_empty_field_names*/);
 		RETURN_ARR( Z_ARRVAL( fields ));
     }
 
@@ -446,28 +446,28 @@ PHP_FUNCTION( hdb_field_metadata )
     try {
 
     // get the number of fields in the resultset
-    num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
+    num_cols = core::SQLNumResultCols( stmt);
 
     zval result_meta_data;
     ZVAL_UNDEF( &result_meta_data );
-    core::hdb_array_init( *stmt, &result_meta_data TSRMLS_CC );
+    core::hdb_array_init( *stmt, &result_meta_data);
     
     for( SQLSMALLINT f = 0; f < num_cols; ++f ) {
     
         hdb_malloc_auto_ptr<field_meta_data> core_meta_data;
-        core_meta_data = core_hdb_field_metadata( stmt, f TSRMLS_CC );
+        core_meta_data = core_hdb_field_metadata( stmt, f);
 
         // initialize the array
         zval field_array;
         ZVAL_UNDEF( &field_array );
-        core::hdb_array_init( *stmt, &field_array TSRMLS_CC );
+        core::hdb_array_init( *stmt, &field_array);
 
         core::hdb_add_assoc_string( *stmt, &field_array, FieldMetaData::NAME, 
-                                       reinterpret_cast<char*>( core_meta_data->field_name.get() ), 0 TSRMLS_CC );
+                                       reinterpret_cast<char*>( core_meta_data->field_name.get() ), 0);
 
         core_meta_data->field_name.transferred();
 
-        core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::TYPE, core_meta_data->field_type TSRMLS_CC );
+        core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::TYPE, core_meta_data->field_type);
 
         switch( core_meta_data->field_type ) {
             case SQL_DECIMAL:
@@ -476,9 +476,9 @@ PHP_FUNCTION( hdb_field_metadata )
             case SQL_TYPE_DATE:
             //case SQL_SS_TIME2:
             //case SQL_SS_TIMESTAMPOFFSET:
-                core::hdb_add_assoc_null( *stmt, &field_array, FieldMetaData::SIZE TSRMLS_CC );
-                core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::PREC, core_meta_data->field_precision TSRMLS_CC );
-                core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::SCALE, core_meta_data->field_scale TSRMLS_CC );
+                core::hdb_add_assoc_null( *stmt, &field_array, FieldMetaData::SIZE);
+                core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::PREC, core_meta_data->field_precision);
+                core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::SCALE, core_meta_data->field_scale);
                 break;
             case SQL_BIT:
             case SQL_TINYINT:
@@ -488,23 +488,23 @@ PHP_FUNCTION( hdb_field_metadata )
             case SQL_REAL:
             case SQL_FLOAT:
             case SQL_DOUBLE:
-                core::hdb_add_assoc_null( *stmt, &field_array, FieldMetaData::SIZE TSRMLS_CC );
-                core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::PREC, core_meta_data->field_precision TSRMLS_CC );
-                core::hdb_add_assoc_null( *stmt, &field_array, FieldMetaData::SCALE TSRMLS_CC );
+                core::hdb_add_assoc_null( *stmt, &field_array, FieldMetaData::SIZE);
+                core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::PREC, core_meta_data->field_precision);
+                core::hdb_add_assoc_null( *stmt, &field_array, FieldMetaData::SCALE);
                 break;
             default:
-                core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::SIZE, core_meta_data->field_size TSRMLS_CC );
-                core::hdb_add_assoc_null( *stmt, &field_array, FieldMetaData::PREC TSRMLS_CC );
-                core::hdb_add_assoc_null( *stmt, &field_array, FieldMetaData::SCALE TSRMLS_CC );
+                core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::SIZE, core_meta_data->field_size);
+                core::hdb_add_assoc_null( *stmt, &field_array, FieldMetaData::PREC);
+                core::hdb_add_assoc_null( *stmt, &field_array, FieldMetaData::SCALE);
                 break;
         }
 
         // add the nullability to the array
         core::hdb_add_assoc_long( *stmt, &field_array, FieldMetaData::NULLABLE, core_meta_data->field_is_nullable
-                                          TSRMLS_CC );
+                                         );
        
         // add this field's meta data to the result set meta data
-        core::hdb_add_next_index_zval( *stmt, &result_meta_data, &field_array TSRMLS_CC );
+        core::hdb_add_next_index_zval( *stmt, &result_meta_data, &field_array);
 
         // always good to call destructor for allocations done through placement new operator.
         core_meta_data->~field_meta_data();
@@ -551,7 +551,7 @@ PHP_FUNCTION( hdb_next_result )
 
     try {
 
-        core_hdb_next_result( stmt TSRMLS_CC, true );
+        core_hdb_next_result( stmt, true );
 
         if( stmt->past_next_result_end ) {
 
@@ -606,7 +606,7 @@ PHP_FUNCTION( hdb_rows_affected )
             throw ss::SSException();
         }
 
-        rows = stmt->current_results->row_count( TSRMLS_C );
+        rows = stmt->current_results->row_count( );
         RETURN_LONG( rows );
     }
 
@@ -655,7 +655,7 @@ PHP_FUNCTION( hdb_num_rows )
             throw ss::SSException();
         }
 
-        rows = stmt->current_results->row_count( TSRMLS_C );
+        rows = stmt->current_results->row_count( );
         RETURN_LONG( rows );
     }
 
@@ -694,7 +694,7 @@ PHP_FUNCTION( hdb_num_fields )
     try {
     
         // retrieve the number of columns from ODBC
-        fields = core::SQLNumResultCols( stmt TSRMLS_CC );
+        fields = core::SQLNumResultCols( stmt);
    
         RETURN_LONG( fields );
     }
@@ -791,18 +791,18 @@ PHP_FUNCTION( hdb_fetch_object )
         }
         
         // fetch the data
-        bool result = core_hdb_fetch( stmt, static_cast<SQLSMALLINT>(fetch_style), fetch_offset TSRMLS_CC );
+        bool result = core_hdb_fetch( stmt, static_cast<SQLSMALLINT>(fetch_style), fetch_offset);
         if( !result ) {
             RETURN_NULL();
         }
 
-        fetch_fields_common( stmt, HDB_FETCH_ASSOC, retval_z, false /*allow_empty_field_names*/ TSRMLS_CC );
+        fetch_fields_common( stmt, HDB_FETCH_ASSOC, retval_z, false /*allow_empty_field_names*/);
         properties_ht = Z_ARRVAL( retval_z );         
         
         // find the zend_class_entry of the class the user requested (stdClass by default) for use below
         zend_class_entry* class_entry = NULL;
         zend_string* class_name_str_z = zend_string_init( class_name, class_name_len, 0 );
-        int zr = ( NULL != ( class_entry = zend_lookup_class( class_name_str_z TSRMLS_CC ))) ? SUCCESS : FAILURE;
+        int zr = ( NULL != ( class_entry = zend_lookup_class( class_name_str_z))) ? SUCCESS : FAILURE;
 		zend_string_release( class_name_str_z );
         CHECK_ZEND_ERROR( zr, stmt, SS_HDB_ERROR_ZEND_BAD_CLASS, class_name ) {
             throw ss::SSException();
@@ -820,7 +820,7 @@ PHP_FUNCTION( hdb_fetch_object )
         // causes duplicate properties when the visibilities are different and also references the
         // default parameters directly in the object, meaning the default property value is changed when
         // the object's property is changed.
-        zend_merge_properties( &retval_z, properties_ht TSRMLS_CC );
+        zend_merge_properties( &retval_z, properties_ht);
 		zend_hash_destroy( properties_ht );
 		FREE_HASHTABLE( properties_ht );
 
@@ -885,7 +885,7 @@ PHP_FUNCTION( hdb_fetch_object )
 
             fcic.object = Z_OBJ_P( &retval_z );
 
-            zr = zend_call_function( &fci, &fcic TSRMLS_CC );
+            zr = zend_call_function( &fci, &fcic);
             CHECK_ZEND_ERROR( zr, stmt, SS_HDB_ERROR_ZEND_OBJECT_FAILED, class_name ) {
                 throw ss::SSException();
             }
@@ -949,7 +949,7 @@ PHP_FUNCTION( hdb_has_rows )
 
         if( !stmt->has_rows && !stmt->fetch_called ) {
 
-            determine_stmt_has_rows( stmt TSRMLS_CC );
+            determine_stmt_has_rows( stmt);
         }
 
         if( stmt->has_rows ) {
@@ -1002,7 +1002,7 @@ PHP_FUNCTION( hdb_send_stream_data )
         }
 
         // send the next packet
-        bool more = core_hdb_send_stream_packet( stmt TSRMLS_CC );
+        bool more = core_hdb_send_stream_packet( stmt);
 
         // if more to send, return true
         if( more ) {
@@ -1068,14 +1068,14 @@ PHP_FUNCTION( hdb_get_field )
     try {
 
         // validate that the field index is within range
-        int num_cols = core::SQLNumResultCols( stmt TSRMLS_CC );
+        int num_cols = core::SQLNumResultCols( stmt);
 
         if( field_index < 0 || field_index >= num_cols ) {
             THROW_SS_ERROR( stmt, SS_HDB_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
         }
 
         core_hdb_get_field( stmt, static_cast<SQLUSMALLINT>( field_index ), hdb_php_type, false, field_value, &field_len, false/*cache_field*/,
-                               &hdb_php_type_out TSRMLS_CC );
+                               &hdb_php_type_out);
         convert_to_zval( stmt, hdb_php_type_out, field_value, field_len, retval_z );		
         hdb_free( field_value );
         RETURN_ZVAL( &retval_z, 1, 1 );
@@ -1158,7 +1158,7 @@ PHP_FUNCTION(HDB_SQLTYPE_VARCHAR)
     type_and_size_calc( INTERNAL_FUNCTION_PARAM_PASSTHRU, SQL_VARCHAR );
 }
 
-void bind_params( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC )
+void bind_params( _Inout_ ss_hdb_stmt* stmt )
 {
     // if there's nothing to do, just return
     if( stmt->params_z == NULL ) {
@@ -1167,7 +1167,7 @@ void bind_params( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC )
 
     try {
 
-        stmt->free_param_data( TSRMLS_C );
+        stmt->free_param_data( );
 
         stmt->executed = false;
 
@@ -1208,7 +1208,7 @@ void bind_params( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC )
 
                 // parse the parameter array that the user gave
                 parse_param_array( stmt, param_z, index, direction, php_out_type, encoding, sql_type, column_size,
-                    decimal_digits TSRMLS_CC );
+                    decimal_digits);
                 value_z = var;
             }
             else {
@@ -1220,7 +1220,7 @@ void bind_params( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC )
             // bind the parameter
             HDB_ASSERT( value_z != NULL, "bind_params: value_z is null." );
             core_hdb_bind_param( stmt, static_cast<SQLUSMALLINT>( index ), direction, value_z, php_out_type, encoding, sql_type, column_size, 
-                decimal_digits TSRMLS_CC );
+                decimal_digits);
 
 		} ZEND_HASH_FOREACH_END();
     }
@@ -1257,7 +1257,7 @@ PHP_FUNCTION( hdb_cancel )
     try {
 
         // close the stream to release the resource
-        close_active_stream( stmt TSRMLS_CC );
+        close_active_stream( stmt);
         
         SQLRETURN r = SQLCancel( stmt->handle() );
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
@@ -1276,7 +1276,7 @@ PHP_FUNCTION( hdb_cancel )
     }
 }
 
-void __cdecl hdb_stmt_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC )
+void __cdecl hdb_stmt_dtor( _Inout_ zend_resource *rsrc )
 {
     LOG_FUNCTION( "hdb_stmt_dtor" );
 
@@ -1323,7 +1323,7 @@ PHP_FUNCTION( hdb_free_stmt )
     ss_hdb_stmt* stmt = NULL;
     hdb_context_auto_ptr error_ctx;
 
-    reset_errors( TSRMLS_C );
+    reset_errors( );
     
     try {
 
@@ -1332,10 +1332,10 @@ PHP_FUNCTION( hdb_free_stmt )
         SET_FUNCTION_NAME( *error_ctx );
 
         // take only the statement resource
-        if( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "r", &stmt_r ) == FAILURE ) {
+        if( zend_parse_parameters( ZEND_NUM_ARGS(), "r", &stmt_r ) == FAILURE ) {
           
             // Check if it was a zval
-            int zr = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "z", &stmt_r );
+            int zr = zend_parse_parameters( ZEND_NUM_ARGS(), "z", &stmt_r );
             CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_HDB_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
 
                 throw ss::SSException();
@@ -1352,7 +1352,7 @@ PHP_FUNCTION( hdb_free_stmt )
         }
 
         // verify the resource so we know we're deleting a statement
-        stmt = static_cast<ss_hdb_stmt*>(zend_fetch_resource_ex(stmt_r TSRMLS_CC, ss_hdb_stmt::resource_name, ss_hdb_stmt::descriptor));
+        stmt = static_cast<ss_hdb_stmt*>(zend_fetch_resource_ex(stmt_r, ss_hdb_stmt::resource_name, ss_hdb_stmt::descriptor));
         
 		// if hdb_free_stmt was called on an already closed statment then we just return success.
 		// zend_list_close sets the type of the closed statment to -1.
@@ -1366,10 +1366,12 @@ PHP_FUNCTION( hdb_free_stmt )
             THROW_CORE_ERROR( error_ctx, SS_HDB_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ );
         }
  
+        // // in /usr/local/include/php/Zend/zend_list.h, zend_list_close is return void
         // delete the resource from Zend's master list, which will trigger the statement's destructor
-        if( zend_list_close( Z_RES_P(stmt_r) ) == FAILURE ) {
-            LOG( SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_P( stmt_r )->handle);
-        }
+        // if( zend_list_close( Z_RES_P(stmt_r) ) == FAILURE ) {
+        //     LOG( SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_P( stmt_r )->handle);
+        // }
+        zend_list_close( Z_RES_P(stmt_r) );
 
         // when stmt_r is first parsed in zend_parse_parameters, stmt_r becomes a zval that points to a zend_resource with a refcount of 2
         // need to DELREF here so the refcount becomes 1 and stmt_r can be appropriate destroyed by the garbage collector when it goes out of scope
@@ -1391,7 +1393,7 @@ PHP_FUNCTION( hdb_free_stmt )
     }
 }
 
-void stmt_option_ss_scrollable:: operator()( _Inout_ hdb_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC )
+void stmt_option_ss_scrollable:: operator()( _Inout_ hdb_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z )
 {
     CHECK_CUSTOM_ERROR(( Z_TYPE_P( value_z ) != IS_STRING ), stmt, HDB_ERROR_INVALID_OPTION_SCROLLABLE ) {
         throw ss::SSException();
@@ -1431,7 +1433,7 @@ void stmt_option_ss_scrollable:: operator()( _Inout_ hdb_stmt* stmt, stmt_option
         THROW_SS_ERROR( stmt, HDB_ERROR_INVALID_OPTION_SCROLLABLE );
     }
 
-    core_hdb_set_scrollable( stmt, cursor_type TSRMLS_CC );
+    core_hdb_set_scrollable( stmt, cursor_type);
 
 }
 
@@ -1697,7 +1699,7 @@ hdb_phptype determine_hdb_php_type( _In_ ss_hdb_stmt const* stmt, _In_ SQLINTEGE
 // The return value simply states whether or not if an error occurred during the determination.
 // (All errors are posted here before returning.)
 
-void determine_stmt_has_rows( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC )
+void determine_stmt_has_rows( _Inout_ ss_hdb_stmt* stmt )
 {
     SQLRETURN r = SQL_SUCCESS;
 
@@ -1710,7 +1712,7 @@ void determine_stmt_has_rows( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC )
     stmt->has_rows = false;
 
     // if there are no columns then there are no rows
-    if( core::SQLNumResultCols( stmt TSRMLS_CC ) == 0 ) {
+    if( core::SQLNumResultCols( stmt) == 0 ) {
 
         return;
     }
@@ -1719,13 +1721,13 @@ void determine_stmt_has_rows( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC )
     // fetch the first row, and then roll the cursor back to be prior to the first row
     if( stmt->cursor_type != SQL_CURSOR_FORWARD_ONLY ) {
 
-        r = stmt->current_results->fetch( SQL_FETCH_FIRST, 0 TSRMLS_CC );
+        r = stmt->current_results->fetch( SQL_FETCH_FIRST, 0);
         if( SQL_SUCCEEDED( r )) {
 
             stmt->has_rows = true;
             CHECK_SQL_WARNING( r, stmt );
             // restore the cursor to its original position.
-            r = stmt->current_results->fetch( SQL_FETCH_ABSOLUTE, 0 TSRMLS_CC );
+            r = stmt->current_results->fetch( SQL_FETCH_ABSOLUTE, 0);
             HDB_ASSERT(( r == SQL_NO_DATA ), "core_hdb_has_rows: Should have scrolled the cursor to the beginning "
                           "of the result set." );
         }
@@ -1736,7 +1738,7 @@ void determine_stmt_has_rows( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC )
         // flag and simply skips the first fetch, knowing it was already done.  It records its own 
         // flags to know if it should fetch on subsequent calls.
 
-        r = core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0 TSRMLS_CC );
+        r = core::SQLFetchScroll( stmt, SQL_FETCH_NEXT, 0);
         if( SQL_SUCCEEDED( r )) {
 
             stmt->has_rows = true;
@@ -1747,7 +1749,7 @@ void determine_stmt_has_rows( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC )
 }
 
 void fetch_fields_common( _Inout_ ss_hdb_stmt* stmt, _In_ zend_long fetch_type, _Out_ zval& fields, _In_ bool allow_empty_field_names
-						TSRMLS_DC )
+						)
 {
 	void* field_value = NULL;
 	hdb_phptype hdb_php_type;
@@ -1760,7 +1762,7 @@ void fetch_fields_common( _Inout_ ss_hdb_stmt* stmt, _In_ zend_long fetch_type, 
 	}
 
 	// get the numer of columns in the result set
-	SQLSMALLINT num_cols = core::SQLNumResultCols(stmt TSRMLS_CC);
+	SQLSMALLINT num_cols = core::SQLNumResultCols(stmt);
 
 	// if this is the first fetch in a new result set, then get the field names and
 	// store them off for successive fetches.
@@ -1775,7 +1777,7 @@ void fetch_fields_common( _Inout_ ss_hdb_stmt* stmt, _In_ zend_long fetch_type, 
         HDB_ENCODING encoding = (( stmt->encoding() == HDB_ENCODING_DEFAULT ) ? stmt->conn->encoding() : stmt->encoding());
         for( int i = 0; i < num_cols; ++i ) {
 
-            core::SQLColAttributeW ( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL TSRMLS_CC );
+            core::SQLColAttributeW ( stmt, i + 1, SQL_DESC_NAME, field_name_w, ( SS_MAXCOLNAMELEN + 1 ) * 2, &field_name_len_w, NULL);
 
             //Conversion function expects size in characters
             field_name_len_w = field_name_len_w / sizeof ( SQLWCHAR );
@@ -1808,7 +1810,7 @@ void fetch_fields_common( _Inout_ ss_hdb_stmt* stmt, _In_ zend_long fetch_type, 
 		SQLLEN field_len = -1;
 
 		core_hdb_get_field( stmt, i, hdb_php_type, true /*prefer string*/,
-									field_value, &field_len, false /*cache_field*/, &hdb_php_type_out TSRMLS_CC );
+									field_value, &field_len, false /*cache_field*/, &hdb_php_type_out);
 
 		zval field;
 		ZVAL_UNDEF( &field );
@@ -1831,10 +1833,10 @@ void fetch_fields_common( _Inout_ ss_hdb_stmt* stmt, _In_ zend_long fetch_type, 
 
 			if( stmt->fetch_field_names[ i ].len > 1 || allow_empty_field_names ) {
 
-				zr = add_assoc_zval( &fields, stmt->fetch_field_names[i].name, &field );
-				CHECK_ZEND_ERROR( zr, stmt, HDB_ERROR_ZEND_HASH ) {
-					throw ss::SSException();
-				}
+				// zr = add_assoc_zval( &fields, stmt->fetch_field_names[i].name, &field );
+				// CHECK_ZEND_ERROR( zr, stmt, HDB_ERROR_ZEND_HASH ) {
+				// 	throw ss::SSException();
+				// }
 			}
 		}
 		//only addref when the fetch_type is BOTH because this is the only case when fields(hashtable)
@@ -1849,7 +1851,7 @@ void fetch_fields_common( _Inout_ ss_hdb_stmt* stmt, _In_ zend_long fetch_type, 
 
 void parse_param_array( _Inout_ ss_hdb_stmt* stmt, _Inout_ zval* param_array, zend_ulong index, _Out_ SQLSMALLINT& direction,
                         _Out_ HDB_PHPTYPE& php_out_type, _Out_ HDB_ENCODING& encoding, _Out_ SQLSMALLINT& sql_type, 
-                        _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits TSRMLS_DC )
+                        _Out_ SQLULEN& column_size, _Out_ SQLSMALLINT& decimal_digits )
 
 {
     zval* var_or_val = NULL;
@@ -2085,7 +2087,7 @@ bool is_valid_hdb_sqltype( _In_ hdb_sqltype sql_type )
 
 // verify an encoding given to type_and_encoding by looking through the list
 // of standard encodings created at module initialization time
-bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ hdb_phptype& phptype_encoding TSRMLS_DC )
+bool verify_and_set_encoding( _In_ const char* encoding_string, _Inout_ hdb_phptype& phptype_encoding )
 {
 	void* encoding_temp = NULL;
 	zend_ulong index = -1;
@@ -2115,7 +2117,7 @@ void type_and_size_calc( INTERNAL_FUNCTION_PARAMETERS, _In_ int type )
     size_t size_len = 0;
     int size = 0;
 
-    if( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "s", &size_p, &size_len ) == FAILURE ) {
+    if( zend_parse_parameters( ZEND_NUM_ARGS(), "s", &size_p, &size_len ) == FAILURE ) {
                
         return;
     }
@@ -2166,7 +2168,7 @@ void type_and_precision_calc( INTERNAL_FUNCTION_PARAMETERS, _In_ int type )
     zend_long prec = HDB_INVALID_PRECISION;
     zend_long scale = HDB_INVALID_SCALE;
 
-    if( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "|ll", &prec, &scale ) == FAILURE ) {
+    if( zend_parse_parameters( ZEND_NUM_ARGS(), "|ll", &prec, &scale ) == FAILURE ) {
                                     
         return;
     }
@@ -2210,12 +2212,12 @@ void type_and_encoding( INTERNAL_FUNCTION_PARAMETERS, _In_ int type )
     hdb_php_type.typeinfo.type = type;
     hdb_php_type.typeinfo.encoding = HDB_ENCODING_INVALID;
 
-    if( zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "s", &encoding_param, &encoding_param_len ) == FAILURE ) {
+    if( zend_parse_parameters( ZEND_NUM_ARGS(), "s", &encoding_param, &encoding_param_len ) == FAILURE ) {
        
         ZVAL_LONG( return_value, hdb_php_type.value );
     }
 
-    if( !verify_and_set_encoding( encoding_param, hdb_php_type TSRMLS_CC )) {
+    if( !verify_and_set_encoding( encoding_param, hdb_php_type)) {
         LOG( SEV_ERROR, "Invalid encoding for php type." );
     }
 

@@ -49,9 +49,9 @@ const char CONNECTION_OPTION_MARS_ON[] = "MARS_Connection={Yes};";
 
 void build_connection_string_and_set_conn_attr( _Inout_ hdb_conn* conn, _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd,
                                                 _Inout_opt_ HashTable* options_ht, _In_ const connection_option valid_conn_opts[],
-                                                void* driver,_Inout_ std::string& connection_string TSRMLS_DC );
-connection_option const* get_connection_option( hdb_conn* conn, _In_ const char* key, _In_ SQLULEN key_len TSRMLS_DC );
-void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC );
+                                                void* driver,_Inout_ std::string& connection_string );
+connection_option const* get_connection_option( hdb_conn* conn, _In_ const char* key, _In_ SQLULEN key_len );
+void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str );
 }
 
 // core_hdb_connect
@@ -72,7 +72,7 @@ void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_l
 hdb_conn* core_hdb_connect( _In_ hdb_context& henv_cp, _In_ hdb_context& henv_ncp, _In_ driver_conn_factory conn_factory,
                                   _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd,
                                   _Inout_opt_ HashTable* options_ht, _In_ error_callback err, _In_ const connection_option valid_conn_opts[],
-                                  _In_ void* driver, _In_z_ const char* driver_func TSRMLS_DC )
+                                  _In_ void* driver, _In_z_ const char* driver_func )
 
 {
     SQLRETURN r;
@@ -85,11 +85,11 @@ hdb_conn* core_hdb_connect( _In_ hdb_context& henv_cp, _In_ hdb_context& henv_nc
 
     try {
         SQLHANDLE temp_conn_h;
-        core::SQLAllocHandle( SQL_HANDLE_DBC, *henv, &temp_conn_h TSRMLS_CC );
-        conn = conn_factory( temp_conn_h, err, driver TSRMLS_CC );
+        core::SQLAllocHandle( SQL_HANDLE_DBC, *henv, &temp_conn_h );
+        conn = conn_factory( temp_conn_h, err, driver );
         conn->set_func( driver_func );
 
-        build_connection_string_and_set_conn_attr( conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_str TSRMLS_CC );
+        build_connection_string_and_set_conn_attr( conn, server, uid, pwd, options_ht, valid_conn_opts, driver, conn_str );
 
         r = core_odbc_connect( conn, conn_str, is_pooled );
         CHECK_SQL_ERROR( r, conn ) {
@@ -196,14 +196,14 @@ SQLRETURN core_odbc_connect( _Inout_ hdb_conn* conn, _Inout_ std::string& conn_s
 // Parameters:
 // hdb_conn*: The connection with which the transaction is associated.
 
-void core_hdb_begin_transaction( _Inout_ hdb_conn* conn TSRMLS_DC )
+void core_hdb_begin_transaction( _Inout_ hdb_conn* conn )
 {
     try {
 
         DEBUG_HDB_ASSERT( conn != NULL, "core_hdb_begin_transaction: connection object was null." );
 
         core::SQLSetConnectAttr( conn, SQL_ATTR_AUTOCOMMIT, reinterpret_cast<SQLPOINTER>( SQL_AUTOCOMMIT_OFF ),
-                                 SQL_IS_UINTEGER TSRMLS_CC );
+                                 SQL_IS_UINTEGER );
     }
     catch ( core::CoreException& ) {
         throw;
@@ -219,16 +219,16 @@ void core_hdb_begin_transaction( _Inout_ hdb_conn* conn TSRMLS_DC )
 // Parameters:
 // hdb_conn*: The connection on which the transaction is active.
 
-void core_hdb_commit( _Inout_ hdb_conn* conn TSRMLS_DC )
+void core_hdb_commit( _Inout_ hdb_conn* conn )
 {
     try {
 
         DEBUG_HDB_ASSERT( conn != NULL, "core_hdb_commit: connection object was null." );
 
-        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_COMMIT TSRMLS_CC );
+        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_COMMIT );
 
         core::SQLSetConnectAttr( conn, SQL_ATTR_AUTOCOMMIT, reinterpret_cast<SQLPOINTER>( SQL_AUTOCOMMIT_ON ),
-                                SQL_IS_UINTEGER TSRMLS_CC );
+                                SQL_IS_UINTEGER );
     }
     catch ( core::CoreException& ) {
         throw;
@@ -244,16 +244,16 @@ void core_hdb_commit( _Inout_ hdb_conn* conn TSRMLS_DC )
 // Parameters:
 // hdb_conn*: The connection on which the transaction is active.
 
-void core_hdb_rollback( _Inout_ hdb_conn* conn TSRMLS_DC )
+void core_hdb_rollback( _Inout_ hdb_conn* conn )
 {
     try {
 
         DEBUG_HDB_ASSERT( conn != NULL, "core_hdb_rollback: connection object was null." );
 
-        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_ROLLBACK TSRMLS_CC );
+        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_ROLLBACK );
 
         core::SQLSetConnectAttr( conn, SQL_ATTR_AUTOCOMMIT, reinterpret_cast<SQLPOINTER>( SQL_AUTOCOMMIT_ON ),
-                                 SQL_IS_UINTEGER TSRMLS_CC );
+                                 SQL_IS_UINTEGER );
 
     }
     catch ( core::CoreException& ) {
@@ -265,7 +265,7 @@ void core_hdb_rollback( _Inout_ hdb_conn* conn TSRMLS_DC )
 // Called when a connection resource is destroyed by the Zend engine.
 // Parameters:
 // conn - The current active connection.
-void core_hdb_close( _Inout_opt_ hdb_conn* conn TSRMLS_DC )
+void core_hdb_close( _Inout_opt_ hdb_conn* conn )
 {
     // if the connection wasn't successful, just return.
     if( conn == NULL )
@@ -274,7 +274,7 @@ void core_hdb_close( _Inout_opt_ hdb_conn* conn TSRMLS_DC )
     try {
 
         // rollback any transaction in progress (we don't care about the return result)
-        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_ROLLBACK TSRMLS_CC );
+        core::SQLEndTran( SQL_HANDLE_DBC, conn, SQL_ROLLBACK );
     }
     catch( core::CoreException& ) {
         LOG( SEV_ERROR, "Transaction rollback failed when closing the connection." );
@@ -299,7 +299,7 @@ void core_hdb_close( _Inout_opt_ hdb_conn* conn TSRMLS_DC )
 // sql - T-SQL command to prepare
 // sql_len - length of the T-SQL string
 
-void core_hdb_prepare( _Inout_ hdb_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len TSRMLS_DC )
+void core_hdb_prepare( _Inout_ hdb_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len )
 {
     try {
 
@@ -327,7 +327,7 @@ void core_hdb_prepare( _Inout_ hdb_stmt* stmt, _In_reads_bytes_(sql_len) const c
         }
 
         // prepare our wide char query string
-        core::SQLPrepareW( stmt, reinterpret_cast<SQLWCHAR*>( wsql_string.get() ), wsql_len TSRMLS_CC );
+        core::SQLPrepareW( stmt, reinterpret_cast<SQLWCHAR*>( wsql_string.get() ), wsql_len );
 
         stmt->param_descriptions.clear();
 
@@ -398,7 +398,7 @@ bool core_is_authentication_option_valid( _In_z_ const char* value, _In_ size_t 
 namespace {
 
 connection_option const* get_connection_option( hdb_conn* conn, _In_ SQLULEN key,
-                                                     _In_ const connection_option conn_opts[] TSRMLS_DC )
+                                                     _In_ const connection_option conn_opts[] )
 {
     for( int opt_idx = 0; conn_opts[ opt_idx ].conn_option_key != HDB_CONN_OPTION_INVALID; ++opt_idx ) {
 
@@ -420,7 +420,7 @@ connection_option const* get_connection_option( hdb_conn* conn, _In_ SQLULEN key
 void build_connection_string_and_set_conn_attr( _Inout_ hdb_conn* conn, _Inout_z_ const char* server, _Inout_opt_z_  const char* uid, 
                                                 _Inout_opt_z_ const char* pwd,
                                                 _Inout_opt_ HashTable* options, _In_ const connection_option valid_conn_opts[],
-                                                void* driver, _Inout_ std::string& connection_string TSRMLS_DC )
+                                                void* driver, _Inout_ std::string& connection_string )
 {
     bool mars_mentioned = false;
     connection_option const* conn_opt;
@@ -428,15 +428,15 @@ void build_connection_string_and_set_conn_attr( _Inout_ hdb_conn* conn, _Inout_z
     try {
 
         // Add the server name
-        common_conn_str_append_func( ODBCConnOptions::Driver, HDB_DRIVER_NAME, strnlen_s( HDB_DRIVER_NAME ), connection_string TSRMLS_CC );
-        common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string TSRMLS_CC );
+        common_conn_str_append_func( ODBCConnOptions::Driver, HDB_DRIVER_NAME, strnlen_s( HDB_DRIVER_NAME ), connection_string );
+        common_conn_str_append_func( ODBCConnOptions::SERVER, server, strnlen_s( server ), connection_string );
 
         bool escaped = core_is_conn_opt_value_escaped( uid, strnlen_s( uid ));
         CHECK_CUSTOM_ERROR( !escaped, conn, HDB_ERROR_UID_PWD_BRACES_NOT_ESCAPED ) {
             throw core::CoreException();
         }
 
-        common_conn_str_append_func( ODBCConnOptions::UID, uid, strnlen_s( uid ), connection_string TSRMLS_CC );
+        common_conn_str_append_func( ODBCConnOptions::UID, uid, strnlen_s( uid ), connection_string );
 
         if( pwd != NULL ) {
             escaped = core_is_conn_opt_value_escaped( pwd, strnlen_s( pwd ));
@@ -444,7 +444,7 @@ void build_connection_string_and_set_conn_attr( _Inout_ hdb_conn* conn, _Inout_z
                 throw core::CoreException();
             }
 
-            common_conn_str_append_func( ODBCConnOptions::PWD, pwd, strnlen_s( pwd ), connection_string TSRMLS_CC );
+            common_conn_str_append_func( ODBCConnOptions::PWD, pwd, strnlen_s( pwd ), connection_string );
         }
 
         // if no options were given, then we set MARS the defaults and return immediately.
@@ -464,13 +464,13 @@ void build_connection_string_and_set_conn_attr( _Inout_ hdb_conn* conn, _Inout_z
         //    // The driver layer should ensure a valid key.
         //    DEBUG_HDB_ASSERT(( type == HASH_KEY_IS_LONG ), "build_connection_string_and_set_conn_attr: invalid connection option key type." );
 
-        //    conn_opt = get_connection_option( conn, index, valid_conn_opts TSRMLS_CC );
+        //    conn_opt = get_connection_option( conn, index, valid_conn_opts );
 
         //    if( index == HDB_CONN_OPTION_MARS ) {
         //        mars_mentioned = true;
         //    }
 
-        //    conn_opt->func( conn_opt, data, conn, connection_string TSRMLS_CC );
+        //    conn_opt->func( conn_opt, data, conn, connection_string );
         //} ZEND_HASH_FOREACH_END();
 
 
@@ -480,11 +480,11 @@ void build_connection_string_and_set_conn_attr( _Inout_ hdb_conn* conn, _Inout_z
     }
 }
 
-void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str TSRMLS_DC )
+void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_len) const char* val, _Inout_ size_t val_len, _Inout_ std::string& conn_str )
 {
     // wrap a connection option in a quote.  It is presumed that any character that need to be escaped will
     // be escaped, such as a closing }.
-    TSRMLS_C;
+    
 
     //if( val_len > 0 && val[0] == '{' && val[ val_len - 1 ] == '}' ) {
     //    ++val;
@@ -499,26 +499,26 @@ void common_conn_str_append_func( _In_z_ const char* odbc_name, _In_reads_(val_l
 }   // namespace
 
 // simply add the parsed value to the connection string
-void conn_str_append_func::func( _In_ connection_option const* option, _In_ zval* value, hdb_conn* /*conn*/, _Inout_ std::string& conn_str TSRMLS_DC )
+void conn_str_append_func::func( _In_ connection_option const* option, _In_ zval* value, hdb_conn* /*conn*/, _Inout_ std::string& conn_str )
 {
     const char* val_str = Z_STRVAL_P( value );
     size_t val_len = Z_STRLEN_P( value );
-    common_conn_str_append_func( option->odbc_name, val_str, val_len, conn_str TSRMLS_CC );
+    common_conn_str_append_func( option->odbc_name, val_str, val_len, conn_str );
 }
 
 // do nothing for connection pooling since we handled it earlier when
 // deciding which environment handle to use.
-void conn_null_func::func( connection_option const* /*option*/, zval* /*value*/, hdb_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC )
+void conn_null_func::func( connection_option const* /*option*/, zval* /*value*/, hdb_conn* /*conn*/, std::string& /*conn_str*/ )
 {
-    TSRMLS_C;
+    
 }
 
-void driver_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+void driver_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str )
 {
     const char* val_str = Z_STRVAL_P( value );
     size_t val_len = Z_STRLEN_P( value );
     std::string driver_option( "" );
-    common_conn_str_append_func( option->odbc_name, val_str, val_len, driver_option TSRMLS_CC );
+    common_conn_str_append_func( option->odbc_name, val_str, val_len, driver_option );
 
     conn->driver_version = ODBC_DRIVER_UNKNOWN;
     for ( short i = DRIVER_VERSION::FIRST; i <= DRIVER_VERSION::LAST && conn->driver_version == ODBC_DRIVER_UNKNOWN; ++i ) {
@@ -536,7 +536,7 @@ void driver_set_func::func( _In_ connection_option const* option, _In_ zval* val
     conn_str += driver_option;
 }
 
-void column_encryption_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC )
+void column_encryption_set_func::func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str )
 {
     convert_to_string( value );
     const char* value_str = Z_STRVAL_P( value );

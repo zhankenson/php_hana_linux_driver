@@ -22,7 +22,7 @@ bool isVistaOrGreater;
 // henv_cp  - Environment handle for pooled connection.
 // henv_ncp - Environment handle for non-pooled connection.
 // err      - Driver specific error handler which handles any errors during initialization.
-void core_hdb_minit( _Outptr_ hdb_context** henv_cp, _Inout_ hdb_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func TSRMLS_DC )
+void core_hdb_minit( _Outptr_ hdb_context** henv_cp, _Inout_ hdb_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func )
 {
     HDB_STATIC_ASSERT( sizeof( hdb_sqltype ) == sizeof( zend_long ) );
     HDB_STATIC_ASSERT( sizeof( hdb_phptype ) == sizeof( zend_long ));
@@ -53,11 +53,11 @@ void core_hdb_minit( _Outptr_ hdb_context** henv_cp, _Inout_ hdb_context** henv_
     
     // set to ODBC 3
     core::SQLSetEnvAttr( **henv_ncp, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>( SQL_OV_ODBC3 ), SQL_IS_INTEGER 
-                         TSRMLS_CC );
+                         );
 
     // disable connection pooling
     core::SQLSetEnvAttr( **henv_ncp, SQL_ATTR_CONNECTION_POOLING, reinterpret_cast<SQLPOINTER>( SQL_CP_OFF ), 
-                         SQL_IS_UINTEGER TSRMLS_CC );
+                         SQL_IS_UINTEGER );
 
     // allocate the pooled envrionment handle
     // we can't use the wrapper in core_hdb.h since we don't have a context on which to base errors, so
@@ -71,11 +71,11 @@ void core_hdb_minit( _Outptr_ hdb_context** henv_cp, _Inout_ hdb_context** henv_
     (*henv_cp)->set_func( driver_func );
 
     // set to ODBC 3
-    core::SQLSetEnvAttr( **henv_cp, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>( SQL_OV_ODBC3 ), SQL_IS_INTEGER TSRMLS_CC);
+    core::SQLSetEnvAttr( **henv_cp, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>( SQL_OV_ODBC3 ), SQL_IS_INTEGER );
 
     // enable connection pooling
     core:: SQLSetEnvAttr( **henv_cp, SQL_ATTR_CONNECTION_POOLING, reinterpret_cast<SQLPOINTER>( SQL_CP_ONE_PER_HENV ), 
-                              SQL_IS_UINTEGER TSRMLS_CC );
+                              SQL_IS_UINTEGER );
 
     }
     catch( core::CoreException& e ) {

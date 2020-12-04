@@ -38,3 +38,8 @@ RUN cd /var/php_hana_linux_driver \
     && /bin/sh build.sh \
     && docker-php-ext-enable hdb
 ```
+
+## Fix
+1.in /usr/local/include/php/Zend/zend_list.h, zend_list_close is return void
+2.in /usr/local/include/php/Zend/zend_API.h, add_assoc_* is return void, like add_assoc_zval( ... ) == FAILURE will throw error
+3.remove TSRMLS_CC because this macro was defined empty in PHP 7.x, and removed in PHP 8.x.

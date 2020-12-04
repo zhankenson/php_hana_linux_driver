@@ -267,16 +267,16 @@ struct hdb_static_assert<true> { _In_ static const int value = 1; };
 // severity - severity of the message: notice, warning, or error
 // msg - the message to log in a FormatMessage style formatting
 // print_args - args to the message
-typedef void (*log_callback)( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, _In_opt_ va_list* print_args );
+typedef void (*log_callback)( _In_ unsigned int severity, _In_ const char* msg, _In_opt_ va_list* print_args );
 
 // each driver must register a log callback.  This should be the first thing a driver does.
 void core_hdb_register_logger( _In_ log_callback );
 
 // a simple wrapper around a PHP error logging function.
-void write_to_log( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, ... );
+void write_to_log( _In_ unsigned int severity, _In_ const char* msg, ... );
 
 // a macro to make it convenient to use the function.
-#define LOG( severity, msg, ...)    write_to_log( severity TSRMLS_CC, msg, ## __VA_ARGS__ )
+#define LOG( severity, msg, ...)    write_to_log( severity, msg, ## __VA_ARGS__ )
 
 // mask for filtering which severities are written to the log
 enum logging_severity {
@@ -842,7 +842,7 @@ struct hdb_conn;
 // a driver specific callback for processing errors. 
 // ctx - the context holding the handles 
 // hdb_error_code - specific error code to return.
-typedef bool (*error_callback)( _Inout_ hdb_context& ctx, _In_ unsigned int hdb_error_code, _In_ bool error TSRMLS_DC, _In_opt_ va_list* print_args );
+typedef bool (*error_callback)( _Inout_ hdb_context& ctx, _In_ unsigned int hdb_error_code, _In_ bool error, _In_opt_ va_list* print_args );
 
 // hdb_context
 // a context holds relevant information to be passed with a connection and statement objects.
@@ -999,7 +999,7 @@ struct hdb_encoding {
 extern bool isVistaOrGreater;                     // used to determine if OS is Vista or Greater
 extern HashTable* g_encodings;                    // encodings supported by this driver
 
-void core_hdb_minit( _Outptr_ hdb_context** henv_cp, _Inout_ hdb_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func TSRMLS_DC );
+void core_hdb_minit( _Outptr_ hdb_context** henv_cp, _Inout_ hdb_context** henv_ncp, _In_ error_callback err, _In_z_ const char* driver_func );
 void core_hdb_mshutdown( _Inout_ hdb_context& henv_cp, _Inout_ hdb_context& henv_ncp );
 
 // environment context used by hdb_connect for when a connection error occurs.
@@ -1064,7 +1064,7 @@ struct hdb_conn : public hdb_context {
     DRIVER_VERSION driver_version;      // version of ODBC driver
 
     // initialize with default values
-    hdb_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ HDB_ENCODING encoding TSRMLS_DC ) :
+    hdb_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_opt_ void* drv, _In_ HDB_ENCODING encoding ) :
         hdb_context( h, SQL_HANDLE_DBC, e, drv, encoding )
     {
         server_version = SERVER_VERSION_UNKNOWN;
@@ -1187,54 +1187,54 @@ struct connection_option {
 
     // process the connection type
     // return whether or not the function was successful in processing the connection option
-    void                (*func)( connection_option const*, zval* value, hdb_conn* conn, std::string& conn_str TSRMLS_DC );
+    void                (*func)( connection_option const*, zval* value, hdb_conn* conn, std::string& conn_str );
 };
 
 // connection attribute functions
 
 // simply add the parsed value to the connection string
 struct conn_str_append_func {
-    static void func( _In_ connection_option const* option, _In_ zval* value, hdb_conn* /*conn*/, _Inout_ std::string& conn_str TSRMLS_DC );
+    static void func( _In_ connection_option const* option, _In_ zval* value, hdb_conn* /*conn*/, _Inout_ std::string& conn_str );
 };
 
 struct conn_null_func {
-    static void func( connection_option const* /*option*/, zval* /*value*/, hdb_conn* /*conn*/, std::string& /*conn_str*/ TSRMLS_DC );
+    static void func( connection_option const* /*option*/, zval* /*value*/, hdb_conn* /*conn*/, std::string& /*conn_str*/ );
 };
 
 struct column_encryption_set_func {
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str );
 };
 
 struct driver_set_func {   
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str );
 };
 
 struct ce_ksp_provider_set_func {
-    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+    static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str );
 };
 
 struct ce_akv_str_set_func {
-   static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str TSRMLS_DC );
+   static void func( _In_ connection_option const* option, _In_ zval* value, _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str );
 };
 
 
 // factory to create a connection (since they are subclassed to instantiate statements)
-typedef hdb_conn* (*driver_conn_factory)( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv TSRMLS_DC );
+typedef hdb_conn* (*driver_conn_factory)( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv );
 
 // *** connection functions ***
 hdb_conn* core_hdb_connect( _In_ hdb_context& henv_cp, _In_ hdb_context& henv_ncp, _In_ driver_conn_factory conn_factory,
                                   _Inout_z_ const char* server, _Inout_opt_z_ const char* uid, _Inout_opt_z_ const char* pwd, 
                                   _Inout_opt_ HashTable* options_ht, _In_ error_callback err, _In_ const connection_option valid_conn_opts[], 
-                                  _In_ void* driver, _In_z_ const char* driver_func TSRMLS_DC );
+                                  _In_ void* driver, _In_z_ const char* driver_func );
 SQLRETURN core_odbc_connect( _Inout_ hdb_conn* conn, _Inout_ std::string& conn_str, _In_ bool is_pooled );
-void core_hdb_close( _Inout_opt_ hdb_conn* conn TSRMLS_DC );
-void core_hdb_prepare( _Inout_ hdb_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len TSRMLS_DC );
-void core_hdb_begin_transaction( _Inout_ hdb_conn* conn TSRMLS_DC );
-void core_hdb_commit( _Inout_ hdb_conn* conn TSRMLS_DC );
-void core_hdb_rollback( _Inout_ hdb_conn* conn TSRMLS_DC );
-void core_hdb_get_server_info( _Inout_ hdb_conn* conn, _Out_ zval* server_info TSRMLS_DC );
-void core_hdb_get_server_version( _Inout_ hdb_conn* conn, _Inout_ zval *server_version TSRMLS_DC );
-void core_hdb_get_client_info( _Inout_ hdb_conn* conn, _Out_ zval *client_info TSRMLS_DC );
+void core_hdb_close( _Inout_opt_ hdb_conn* conn );
+void core_hdb_prepare( _Inout_ hdb_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql, _In_ SQLLEN sql_len );
+void core_hdb_begin_transaction( _Inout_ hdb_conn* conn );
+void core_hdb_commit( _Inout_ hdb_conn* conn );
+void core_hdb_rollback( _Inout_ hdb_conn* conn );
+void core_hdb_get_server_info( _Inout_ hdb_conn* conn, _Out_ zval* server_info );
+void core_hdb_get_server_version( _Inout_ hdb_conn* conn, _Inout_ zval *server_version );
+void core_hdb_get_client_info( _Inout_ hdb_conn* conn, _Out_ zval *client_info );
 bool core_is_conn_opt_value_escaped( _Inout_ const char* value, _Inout_ size_t value_len );
 size_t core_str_zval_is_true( _Inout_ zval* str_zval );
 bool core_is_authentication_option_valid( _In_z_ const char* value, _In_ size_t value_len );
@@ -1247,22 +1247,22 @@ bool core_compare_error_state( _In_ hdb_conn* conn,  _In_ SQLRETURN r, _In_ cons
 
 struct stmt_option_functor {
 
-    virtual void operator()( _Inout_ hdb_stmt* /*stmt*/, stmt_option const* /*opt*/, _In_ zval* /*value_z*/ TSRMLS_DC );
+    virtual void operator()( _Inout_ hdb_stmt* /*stmt*/, stmt_option const* /*opt*/, _In_ zval* /*value_z*/ );
 };
 
 struct stmt_option_query_timeout : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ hdb_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ hdb_stmt* stmt, stmt_option const* opt, _In_ zval* value_z );
 };
 
 struct stmt_option_send_at_exec : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ hdb_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ hdb_stmt* stmt, stmt_option const* opt, _In_ zval* value_z );
 };
 
 struct stmt_option_buffered_query_limit : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ hdb_stmt* stmt, stmt_option const* opt, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ hdb_stmt* stmt, stmt_option const* opt, _In_ zval* value_z );
 };
 
 // used to hold the table for statment options
@@ -1295,7 +1295,7 @@ struct hdb_stream {
 };
 
 // close any active stream
-void close_active_stream( _Inout_ hdb_stmt* stmt TSRMLS_DC );
+void close_active_stream( _Inout_ hdb_stmt* stmt );
 
 extern php_stream_wrapper g_hdb_stream_wrapper;
 
@@ -1360,8 +1360,8 @@ struct param_meta_data
 // *** Statement resource structure *** 
 struct hdb_stmt : public hdb_context {
 
-    void free_param_data( TSRMLS_D );
-    virtual void new_result_set( TSRMLS_D );
+    void free_param_data( );
+    virtual void new_result_set( );
 
     hdb_conn*   conn;                  // Connection that created this statement
    
@@ -1395,7 +1395,7 @@ struct hdb_stmt : public hdb_context {
 
     std::vector<param_meta_data> param_descriptions;
 
-    hdb_stmt( _In_ hdb_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv TSRMLS_DC );
+    hdb_stmt( _In_ hdb_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_opt_ void* drv );
     virtual ~hdb_stmt( void );
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the HDB_PHPTYPE_* constants
@@ -1440,30 +1440,30 @@ const size_t HDB_CURSOR_BUFFERED = 0xfffffffeUL; // arbitrary number that doesn'
 #endif // !_WIN32
 
 // factory to create a statement
-typedef hdb_stmt* (*driver_stmt_factory)( hdb_conn* conn, SQLHANDLE h, error_callback e, void* drv TSRMLS_DC );
+typedef hdb_stmt* (*driver_stmt_factory)( hdb_conn* conn, SQLHANDLE h, error_callback e, void* drv );
 
 // *** statement functions ***
 hdb_stmt* core_hdb_create_stmt( _Inout_ hdb_conn* conn, _In_ driver_stmt_factory stmt_factory, _In_opt_ HashTable* options_ht, 
-                                      _In_opt_ const stmt_option valid_stmt_opts[], _In_ error_callback const err, _In_opt_ void* driver TSRMLS_DC );
+                                      _In_opt_ const stmt_option valid_stmt_opts[], _In_ error_callback const err, _In_opt_ void* driver );
 void core_hdb_bind_param( _Inout_ hdb_stmt* stmt, _In_ SQLUSMALLINT param_num, _In_ SQLSMALLINT direction, _Inout_ zval* param_z,
                              _In_ HDB_PHPTYPE php_out_type, _Inout_ HDB_ENCODING encoding, _Inout_ SQLSMALLINT sql_type, _Inout_ SQLULEN column_size,
-                             _Inout_ SQLSMALLINT decimal_digits TSRMLS_DC );
-SQLRETURN core_hdb_execute( _Inout_ hdb_stmt* stmt TSRMLS_DC, _In_reads_bytes_(sql_len) const char* sql = NULL, _In_ int sql_len = 0 );
-field_meta_data* core_hdb_field_metadata( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT colno TSRMLS_DC );
-bool core_hdb_fetch( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLULEN fetch_offset TSRMLS_DC );
+                             _Inout_ SQLSMALLINT decimal_digits );
+SQLRETURN core_hdb_execute( _Inout_ hdb_stmt* stmt, _In_reads_bytes_(sql_len) const char* sql = NULL, _In_ int sql_len = 0 );
+field_meta_data* core_hdb_field_metadata( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT colno );
+bool core_hdb_fetch( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLULEN fetch_offset );
 void core_hdb_get_field( _Inout_ hdb_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ hdb_phptype hdb_phptype, _In_ bool prefer_string,
 							_Outref_result_bytebuffer_maybenull_(*field_length) void*& field_value, _Inout_ SQLLEN* field_length, _In_ bool cache_field,
-							_Out_ HDB_PHPTYPE *hdb_php_type_out TSRMLS_DC);
-bool core_hdb_has_any_result( _Inout_ hdb_stmt* stmt TSRMLS_DC );
-void core_hdb_next_result( _Inout_ hdb_stmt* stmt TSRMLS_DC, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
-void core_hdb_post_param( _Inout_ hdb_stmt* stmt, _In_ zend_ulong paramno, zval* param_z TSRMLS_DC );
-void core_hdb_set_scrollable( _Inout_ hdb_stmt* stmt, _In_ unsigned long cursor_type TSRMLS_DC );
-void core_hdb_set_query_timeout( _Inout_ hdb_stmt* stmt, _In_ long timeout TSRMLS_DC );
-void core_hdb_set_query_timeout( _Inout_ hdb_stmt* stmt, _Inout_ zval* value_z TSRMLS_DC );
-void core_hdb_set_send_at_exec( _Inout_ hdb_stmt* stmt, _In_ zval* value_z TSRMLS_DC );
-bool core_hdb_send_stream_packet( _Inout_ hdb_stmt* stmt TSRMLS_DC );
-void core_hdb_set_buffered_query_limit( _Inout_ hdb_stmt* stmt, _In_ zval* value_z TSRMLS_DC );
-void core_hdb_set_buffered_query_limit( _Inout_ hdb_stmt* stmt, _In_ SQLLEN limit TSRMLS_DC );
+							_Out_ HDB_PHPTYPE *hdb_php_type_out);
+bool core_hdb_has_any_result( _Inout_ hdb_stmt* stmt );
+void core_hdb_next_result( _Inout_ hdb_stmt* stmt, _In_ bool finalize_output_params = true, _In_ bool throw_on_errors = true );
+void core_hdb_post_param( _Inout_ hdb_stmt* stmt, _In_ zend_ulong paramno, zval* param_z );
+void core_hdb_set_scrollable( _Inout_ hdb_stmt* stmt, _In_ unsigned long cursor_type );
+void core_hdb_set_query_timeout( _Inout_ hdb_stmt* stmt, _In_ long timeout );
+void core_hdb_set_query_timeout( _Inout_ hdb_stmt* stmt, _Inout_ zval* value_z );
+void core_hdb_set_send_at_exec( _Inout_ hdb_stmt* stmt, _In_ zval* value_z );
+bool core_hdb_send_stream_packet( _Inout_ hdb_stmt* stmt );
+void core_hdb_set_buffered_query_limit( _Inout_ hdb_stmt* stmt, _In_ zval* value_z );
+void core_hdb_set_buffered_query_limit( _Inout_ hdb_stmt* stmt, _In_ SQLLEN limit );
 
 
 //*********************************************************************************************************************************
@@ -1485,15 +1485,15 @@ struct hdb_result_set {
     virtual ~hdb_result_set( void ) { }
 
     virtual bool cached( int field_index ) = 0;
-    virtual SQLRETURN fetch( _Inout_ SQLSMALLINT fetch_orientation, _Inout_opt_ SQLLEN fetch_offset TSRMLS_DC ) = 0;
+    virtual SQLRETURN fetch( _Inout_ SQLSMALLINT fetch_orientation, _Inout_opt_ SQLLEN fetch_offset ) = 0;
     virtual SQLRETURN get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                 _Out_writes_bytes_opt_(buffer_length) void* buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
-                                bool handle_warning TSRMLS_DC )= 0;
+                                bool handle_warning )= 0;
     virtual SQLRETURN get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier, 
                                       _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                      _Inout_ SQLSMALLINT* out_buffer_length TSRMLS_DC ) = 0;
+                                      _Inout_ SQLSMALLINT* out_buffer_length ) = 0;
     virtual hdb_error* get_diag_rec( _In_ SQLSMALLINT record_number ) = 0;
-    virtual SQLLEN row_count( TSRMLS_D ) = 0;
+    virtual SQLLEN row_count( ) = 0;
 };
 
 struct hdb_odbc_result_set : public hdb_result_set {
@@ -1502,15 +1502,15 @@ struct hdb_odbc_result_set : public hdb_result_set {
 	virtual ~hdb_odbc_result_set( void );
 
     virtual bool cached( int field_index ) { return false; }
-    virtual SQLRETURN fetch( _In_ SQLSMALLINT fetch_orientation, _In_ SQLLEN fetch_offset TSRMLS_DC );
+    virtual SQLRETURN fetch( _In_ SQLSMALLINT fetch_orientation, _In_ SQLLEN fetch_offset );
     virtual SQLRETURN get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                 _Out_writes_opt_(buffer_length) void* buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
-                                _In_ bool handle_warning TSRMLS_DC );
+                                _In_ bool handle_warning );
     virtual SQLRETURN get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier, 
                                       _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                      _Inout_ SQLSMALLINT* out_buffer_length TSRMLS_DC );
+                                      _Inout_ SQLSMALLINT* out_buffer_length );
     virtual hdb_error* get_diag_rec( _In_ SQLSMALLINT record_number );
-    virtual SQLLEN row_count( TSRMLS_D );
+    virtual SQLLEN row_count( );
 
  private:
     // prevent invalid instantiations and assignments
@@ -1536,19 +1536,19 @@ struct hdb_buffered_result_set : public hdb_result_set {
     static const zend_long BUFFERED_QUERY_LIMIT_DEFAULT = 10240;   // measured in KB
     static const zend_long BUFFERED_QUERY_LIMIT_INVALID = 0;
 
-    explicit hdb_buffered_result_set( _Inout_ hdb_stmt* odbc TSRMLS_DC );
+    explicit hdb_buffered_result_set( _Inout_ hdb_stmt* odbc );
     virtual ~hdb_buffered_result_set( void );
 
     virtual bool cached( int field_index ) { return true; }
-    virtual SQLRETURN fetch( _Inout_ SQLSMALLINT fetch_orientation, _Inout_opt_ SQLLEN fetch_offset TSRMLS_DC );
+    virtual SQLRETURN fetch( _Inout_ SQLSMALLINT fetch_orientation, _Inout_opt_ SQLLEN fetch_offset );
     virtual SQLRETURN get_data( _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                 _Out_writes_bytes_opt_(buffer_length) void* buffer, _In_ SQLLEN buffer_length, _Inout_ SQLLEN* out_buffer_length,
-                                bool handle_warning TSRMLS_DC );
+                                bool handle_warning );
     virtual SQLRETURN get_diag_field( _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier, 
                                       _Inout_updates_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                      _Inout_ SQLSMALLINT* out_buffer_length TSRMLS_DC );
+                                      _Inout_ SQLSMALLINT* out_buffer_length );
     virtual hdb_error* get_diag_rec( _In_ SQLSMALLINT record_number );
-    virtual SQLLEN row_count( TSRMLS_D );
+    virtual SQLLEN row_count( );
 
     // buffered result set specific 
     SQLSMALLINT column_count( void )
@@ -1732,11 +1732,11 @@ enum error_handling_flags {
 // 3/message) driver specific error message
 // The fetch type determines if the indices are numeric, associative, or both.
 bool core_hdb_get_odbc_error( _Inout_ hdb_context& ctx, _In_ int record_number, _Inout_ hdb_error_auto_ptr& error, 
-                                 _In_ logging_severity severity TSRMLS_DC );
+                                 _In_ logging_severity severity );
 
 // format and return a driver specfic error
 void core_hdb_format_driver_error( _In_ hdb_context& ctx, _In_ hdb_error_const const* custom_error, 
-                                      _Out_ hdb_error_auto_ptr& formatted_error, _In_ logging_severity severity TSRMLS_DC, _In_opt_ va_list* args );
+                                      _Out_ hdb_error_auto_ptr& formatted_error, _In_ logging_severity severity, _In_opt_ va_list* args );
 
 
 // return the message for the HRESULT returned by GetLastError.  Some driver errors use this to
@@ -1748,20 +1748,20 @@ DWORD core_hdb_format_message( _Out_ char* output_buffer, _In_ unsigned output_l
 
 // convenience functions that overload either a reference or a pointer so we can use
 // either in the CHECK_* functions.
-inline bool call_error_handler( _Inout_ hdb_context& ctx, _In_ unsigned long hdb_error_code TSRMLS_DC, _In_ bool warning, ... )
+inline bool call_error_handler( _Inout_ hdb_context& ctx, _In_ unsigned long hdb_error_code, _In_ bool warning, ... )
 {
     va_list print_params;
     va_start( print_params, warning );
-    bool ignored = ctx.error_handler()( ctx, hdb_error_code, warning TSRMLS_CC, &print_params );
+    bool ignored = ctx.error_handler()( ctx, hdb_error_code, warning, &print_params );
     va_end( print_params );
     return ignored;
 }
 
-inline bool call_error_handler( _Inout_ hdb_context* ctx, _In_ unsigned long hdb_error_code TSRMLS_DC, _In_ bool warning, ... )
+inline bool call_error_handler( _Inout_ hdb_context* ctx, _In_ unsigned long hdb_error_code, _In_ bool warning, ... )
 {
     va_list print_params;
     va_start( print_params, warning );
-    bool ignored = ctx->error_handler()( *ctx, hdb_error_code, warning TSRMLS_CC, &print_params );
+    bool ignored = ctx->error_handler()( *ctx, hdb_error_code, warning, &print_params );
     va_end( print_params );
     return ignored;
 }
@@ -1802,7 +1802,7 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
     bool flag##unique = (condition);                                 \
     bool ignored##unique = true;                                       \
     if (flag##unique) {                                              \
-        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/false, ## __VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, ssphp, /*warning*/false, ## __VA_ARGS__ ); \
     }  \
     if( !ignored##unique )
     
@@ -1822,7 +1822,7 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
 #define CHECK_WARNING_AS_ERROR_UNIQUE(  unique, condition, context, ssphp, ... )   \
     bool ignored##unique = true;    \
     if( condition ) { \
-        ignored##unique = call_error_handler( context, ssphp TSRMLS_CC, /*warning*/true, ## __VA_ARGS__ ); \
+        ignored##unique = call_error_handler( context, ssphp, /*warning*/true, ## __VA_ARGS__ ); \
     }   \
     if( !ignored##unique ) 
 
@@ -1831,7 +1831,7 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
     
 #define CHECK_SQL_WARNING( result, context, ... )        \
     if( result == SQL_SUCCESS_WITH_INFO ) {              \
-        (void)call_error_handler( context, 0 TSRMLS_CC, /*warning*/ true, ## __VA_ARGS__ ); \
+        (void)call_error_handler( context, 0, /*warning*/ true, ## __VA_ARGS__ ); \
     }
 
 #define CHECK_CUSTOM_WARNING_AS_ERROR( condition, context, ssphp, ... ) \
@@ -1844,16 +1844,16 @@ inline bool is_truncated_warning( _In_ SQLCHAR* state )
     HDB_ASSERT( result != SQL_INVALID_HANDLE, "Invalid handle returned." );  \
     bool ignored = true;                                   \
     if( result == SQL_ERROR ) {                            \
-        ignored = call_error_handler( context, HDB_ERROR_ODBC TSRMLS_CC, false, ##__VA_ARGS__ ); \
+        ignored = call_error_handler( context, HDB_ERROR_ODBC, false, ##__VA_ARGS__ ); \
     }                                                      \
     else if( result == SQL_SUCCESS_WITH_INFO ) {           \
-        ignored = call_error_handler( context, HDB_ERROR_ODBC TSRMLS_CC, true TSRMLS_CC, ##__VA_ARGS__ ); \
+        ignored = call_error_handler( context, HDB_ERROR_ODBC, true, ##__VA_ARGS__ ); \
     }                                                      \
     if( !ignored )
   
 // throw an exception after it has been hooked into the custom error handler
 #define THROW_CORE_ERROR( ctx, custom, ... ) \
-  (void)call_error_handler( ctx, custom TSRMLS_CC, /*warning*/ false, ## __VA_ARGS__ ); \
+  (void)call_error_handler( ctx, custom, /*warning*/ false, ## __VA_ARGS__ ); \
   throw core::CoreException();
 
 //*********************************************************************************************************************************
@@ -1870,7 +1870,7 @@ namespace core {
       }
     };
 
-    inline void check_for_mars_error( _Inout_ hdb_stmt* stmt, _In_ SQLRETURN r TSRMLS_DC )
+    inline void check_for_mars_error( _Inout_ hdb_stmt* stmt, _In_ SQLRETURN r )
     {
         // We check for the 'connection busy' error caused by having MultipleActiveResultSets off
         // and return a more helpful message prepended to the ODBC errors if that error occurs
@@ -1908,7 +1908,7 @@ namespace core {
 
     inline SQLRETURN SQLGetDiagField( _Inout_ hdb_context* ctx, _In_ SQLSMALLINT record_number, _In_ SQLSMALLINT diag_identifier, 
                                       _Out_writes_opt_(buffer_length) SQLPOINTER diag_info_buffer, _In_ SQLSMALLINT buffer_length,
-                                      _Out_opt_ SQLSMALLINT* out_buffer_length TSRMLS_DC )
+                                      _Out_opt_ SQLSMALLINT* out_buffer_length )
     {
         SQLRETURN r = ::SQLGetDiagField( ctx->handle_type(), ctx->handle(), record_number, diag_identifier, 
                                        diag_info_buffer, buffer_length, out_buffer_length );
@@ -1921,7 +1921,7 @@ namespace core {
     }
 
     inline void SQLAllocHandle( _In_ SQLSMALLINT HandleType, _Inout_ hdb_context& InputHandle, 
-                                _Out_ SQLHANDLE* OutputHandlePtr TSRMLS_DC )
+                                _Out_ SQLHANDLE* OutputHandlePtr )
     {
         SQLRETURN r;
         r = ::SQLAllocHandle( HandleType, InputHandle.handle(), OutputHandlePtr );
@@ -1940,7 +1940,7 @@ namespace core {
                                   _Inout_opt_ SQLPOINTER        ParameterValuePtr,
                                   _Inout_ SQLLEN                BufferLength,
                                   _Inout_ SQLLEN *              StrLen_Or_IndPtr
-                                  TSRMLS_DC )
+                                  )
     {
         SQLRETURN r;
         r = ::SQLBindParameter( stmt->handle(), ParameterNumber, InputOutputType, ValueType, ParameterType, ColumnSize, 
@@ -1951,7 +1951,7 @@ namespace core {
         }
     }
 
-    inline void SQLCloseCursor( _Inout_ hdb_stmt* stmt TSRMLS_DC )
+    inline void SQLCloseCursor( _Inout_ hdb_stmt* stmt )
     {
         SQLRETURN r = ::SQLCloseCursor( stmt->handle() );
 
@@ -1962,7 +1962,7 @@ namespace core {
 
     inline void SQLColAttribute( _Inout_ hdb_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLUSMALLINT field_identifier, 
                                  _Out_writes_bytes_opt_(buffer_length) SQLPOINTER field_type_char, _In_ SQLSMALLINT buffer_length,
-                                 _Out_opt_ SQLSMALLINT* out_buffer_length, _Out_opt_ SQLLEN* field_type_num TSRMLS_DC )
+                                 _Out_opt_ SQLSMALLINT* out_buffer_length, _Out_opt_ SQLLEN* field_type_num )
     {
         SQLRETURN r = ::SQLColAttribute( stmt->handle(), field_index, field_identifier, field_type_char,
                                          buffer_length, out_buffer_length, field_type_num );
@@ -1974,7 +1974,7 @@ namespace core {
 
     inline void SQLColAttributeW( _Inout_ hdb_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLUSMALLINT field_identifier,
                                   _Out_writes_bytes_opt_(buffer_length) SQLPOINTER field_type_char, _In_ SQLSMALLINT buffer_length,
-                                  _Out_opt_ SQLSMALLINT* out_buffer_length, _Out_opt_ SQLLEN* field_type_num TSRMLS_DC )
+                                  _Out_opt_ SQLSMALLINT* out_buffer_length, _Out_opt_ SQLLEN* field_type_num )
     {
         SQLRETURN r = ::SQLColAttributeW( stmt->handle(), field_index, field_identifier, field_type_char,
                                           buffer_length, out_buffer_length, field_type_num );
@@ -1986,7 +1986,7 @@ namespace core {
 
     inline void SQLDescribeCol( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT colno, _Out_writes_opt_(col_name_length) SQLCHAR* col_name, _In_ SQLSMALLINT col_name_length,
                                 _Out_opt_ SQLSMALLINT* col_name_length_out, _Out_opt_ SQLSMALLINT* data_type, _Out_opt_ SQLULEN* col_size,
-                                _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable TSRMLS_DC )
+                                _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable )
     {
         SQLRETURN r;
         r = ::SQLDescribeCol( stmt->handle(), colno, col_name, col_name_length, col_name_length_out, 
@@ -1999,7 +1999,7 @@ namespace core {
 
 	inline void SQLDescribeColW( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT colno, _Out_writes_opt_(col_name_length) SQLWCHAR* col_name, _In_ SQLSMALLINT col_name_length,
                                  _Out_opt_ SQLSMALLINT* col_name_length_out, _Out_opt_ SQLSMALLINT* data_type, _Out_opt_ SQLULEN* col_size,
-                                 _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable TSRMLS_DC )
+                                 _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable )
 	{
 		SQLRETURN r;
 		r = ::SQLDescribeColW( stmt->handle(), colno, col_name, col_name_length, col_name_length_out,
@@ -2011,7 +2011,7 @@ namespace core {
 	}
 
     inline void SQLDescribeParam( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT paramno, _Out_opt_ SQLSMALLINT* data_type, _Out_opt_ SQLULEN* col_size,
-        _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable TSRMLS_DC )
+        _Out_opt_ SQLSMALLINT* decimal_digits, _Out_opt_ SQLSMALLINT* nullable )
     {
         SQLRETURN r;
         r = ::SQLDescribeParam( stmt->handle(), paramno, data_type, col_size, decimal_digits, nullable );
@@ -2031,7 +2031,7 @@ namespace core {
         }
     }
 
-    inline void SQLEndTran( _In_ SQLSMALLINT handleType, _Inout_ hdb_conn* conn, _In_ SQLSMALLINT completionType TSRMLS_DC )
+    inline void SQLEndTran( _In_ SQLSMALLINT handleType, _Inout_ hdb_conn* conn, _In_ SQLSMALLINT completionType )
     {
         SQLRETURN r = ::SQLEndTran( handleType, conn->handle(), completionType );
         
@@ -2041,11 +2041,11 @@ namespace core {
     }
 
     // SQLExecDirect returns the status code since it returns either SQL_NEED_DATA or SQL_NO_DATA besides just errors/success    
-    inline SQLRETURN SQLExecDirect( _Inout_ hdb_stmt* stmt, _In_ char* sql TSRMLS_DC )
+    inline SQLRETURN SQLExecDirect( _Inout_ hdb_stmt* stmt, _In_ char* sql )
     {
         SQLRETURN r = ::SQLExecDirect( stmt->handle(), reinterpret_cast<SQLCHAR*>( sql ), SQL_NTS );
         
-        check_for_mars_error( stmt, r TSRMLS_CC );
+        check_for_mars_error( stmt, r );
 
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
 
@@ -2054,12 +2054,12 @@ namespace core {
         return r;
     }
 
-    inline SQLRETURN SQLExecDirectW( _Inout_ hdb_stmt* stmt, _In_ SQLWCHAR* wsql TSRMLS_DC )
+    inline SQLRETURN SQLExecDirectW( _Inout_ hdb_stmt* stmt, _In_ SQLWCHAR* wsql )
     {
         SQLRETURN r;
         r = ::SQLExecDirectW( stmt->handle(), reinterpret_cast<SQLWCHAR*>( wsql ), SQL_NTS );
 
-        check_for_mars_error( stmt, r TSRMLS_CC );
+        check_for_mars_error( stmt, r );
 
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
@@ -2068,12 +2068,12 @@ namespace core {
     }
 
     // SQLExecute returns the status code since it returns either SQL_NEED_DATA or SQL_NO_DATA besides just errors/success
-    inline SQLRETURN SQLExecute( _Inout_ hdb_stmt* stmt TSRMLS_DC )
+    inline SQLRETURN SQLExecute( _Inout_ hdb_stmt* stmt )
     {
         SQLRETURN r;
         r = ::SQLExecute( stmt->handle() );
    
-        check_for_mars_error( stmt, r TSRMLS_CC );
+        check_for_mars_error( stmt, r );
 
         CHECK_SQL_ERROR_OR_WARNING( r, stmt ) {
             throw CoreException();
@@ -2082,7 +2082,7 @@ namespace core {
         return r;
     }
 
-    inline SQLRETURN SQLFetchScroll( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLLEN fetch_offset TSRMLS_DC )
+    inline SQLRETURN SQLFetchScroll( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT fetch_orientation, _In_ SQLLEN fetch_offset )
     {
         SQLRETURN r = ::SQLFetchScroll( stmt->handle(), fetch_orientation, fetch_offset );
         
@@ -2094,14 +2094,14 @@ namespace core {
 
 
     // wrap SQLFreeHandle and report any errors, but don't actually signal an error to the calling routine
-    inline void SQLFreeHandle( _Inout_ hdb_context& ctx TSRMLS_DC )
+    inline void SQLFreeHandle( _Inout_ hdb_context& ctx )
     {
         SQLRETURN r;
         r = ::SQLFreeHandle( ctx.handle_type(), ctx.handle() );
         CHECK_SQL_ERROR_OR_WARNING( r, ctx ) {}
     }
 
-    inline void SQLGetStmtAttr( _Inout_ hdb_stmt* stmt, _In_ SQLINTEGER attr, _Out_writes_opt_(buf_len) void* value_ptr, _In_ SQLINTEGER buf_len, _Out_opt_ SQLINTEGER* str_len TSRMLS_DC)
+    inline void SQLGetStmtAttr( _Inout_ hdb_stmt* stmt, _In_ SQLINTEGER attr, _Out_writes_opt_(buf_len) void* value_ptr, _In_ SQLINTEGER buf_len, _Out_opt_ SQLINTEGER* str_len)
     {
         SQLRETURN r;
         r = ::SQLGetStmtAttr( stmt->handle(), attr, value_ptr, buf_len, str_len );
@@ -2112,7 +2112,7 @@ namespace core {
 
     inline SQLRETURN SQLGetData( _Inout_ hdb_stmt* stmt, _In_ SQLUSMALLINT field_index, _In_ SQLSMALLINT target_type,
                                  _Out_writes_opt_(buffer_length) void* buffer, _In_ SQLLEN buffer_length, _Out_opt_ SQLLEN* out_buffer_length,
-                                 _In_ bool handle_warning TSRMLS_DC )
+                                 _In_ bool handle_warning )
     {
         SQLRETURN r = ::SQLGetData( stmt->handle(), field_index, target_type, buffer, buffer_length, out_buffer_length );
 
@@ -2134,7 +2134,7 @@ namespace core {
 
    
     inline void SQLGetInfo( _Inout_ hdb_conn* conn, _In_ SQLUSMALLINT info_type, _Out_writes_bytes_opt_(buffer_len) SQLPOINTER info_value, _In_ SQLSMALLINT buffer_len,
-                     _Out_opt_ SQLSMALLINT* str_len TSRMLS_DC )
+                     _Out_opt_ SQLSMALLINT* str_len )
     {
         SQLRETURN r;
         r = ::SQLGetInfo( conn->handle(), info_type, info_value, buffer_len, str_len );
@@ -2145,7 +2145,7 @@ namespace core {
     }
 
 
-    inline void SQLGetTypeInfo( _Inout_ hdb_stmt* stmt, _In_ SQLUSMALLINT data_type TSRMLS_DC )
+    inline void SQLGetTypeInfo( _Inout_ hdb_stmt* stmt, _In_ SQLUSMALLINT data_type )
     {
         SQLRETURN r;
         r = ::SQLGetTypeInfo( stmt->handle(), data_type );
@@ -2157,7 +2157,7 @@ namespace core {
 
 
     // SQLMoreResults returns the status code since it returns SQL_NO_DATA when there is no more data in a result set.
-    inline SQLRETURN SQLMoreResults( _Inout_ hdb_stmt* stmt TSRMLS_DC )
+    inline SQLRETURN SQLMoreResults( _Inout_ hdb_stmt* stmt )
     {
         SQLRETURN r = ::SQLMoreResults( stmt->handle() );
 
@@ -2168,7 +2168,7 @@ namespace core {
         return r;
     }
 
-    inline SQLSMALLINT SQLNumResultCols( _Inout_ hdb_stmt* stmt TSRMLS_DC )
+    inline SQLSMALLINT SQLNumResultCols( _Inout_ hdb_stmt* stmt )
     {
         SQLRETURN r;
         SQLSMALLINT num_cols;
@@ -2183,7 +2183,7 @@ namespace core {
 
     // SQLParamData returns the status code since it returns either SQL_NEED_DATA or SQL_NO_DATA when there are more
     // parameters or when the parameters are all processed.
-    inline SQLRETURN SQLParamData( _Inout_ hdb_stmt* stmt, _Out_opt_ SQLPOINTER* value_ptr_ptr TSRMLS_DC )
+    inline SQLRETURN SQLParamData( _Inout_ hdb_stmt* stmt, _Out_opt_ SQLPOINTER* value_ptr_ptr )
     {
         SQLRETURN r;
         r = ::SQLParamData( stmt->handle(), value_ptr_ptr );
@@ -2193,7 +2193,7 @@ namespace core {
         return r;
     }
 
-    inline void SQLPrepareW( _Inout_ hdb_stmt* stmt, _In_reads_(sql_len) SQLWCHAR * sql, _In_ SQLINTEGER sql_len TSRMLS_DC )
+    inline void SQLPrepareW( _Inout_ hdb_stmt* stmt, _In_reads_(sql_len) SQLWCHAR * sql, _In_ SQLINTEGER sql_len )
     {
         SQLRETURN r;
         r = ::SQLPrepareW( stmt->handle(), sql, sql_len );
@@ -2203,7 +2203,7 @@ namespace core {
     }
 
 
-    inline void SQLPutData( _Inout_ hdb_stmt* stmt, _In_reads_(strlen_or_ind) SQLPOINTER data_ptr, _In_ SQLLEN strlen_or_ind TSRMLS_DC )
+    inline void SQLPutData( _Inout_ hdb_stmt* stmt, _In_reads_(strlen_or_ind) SQLPOINTER data_ptr, _In_ SQLLEN strlen_or_ind )
     {
         SQLRETURN r;
         r = ::SQLPutData( stmt->handle(), data_ptr, strlen_or_ind );
@@ -2213,7 +2213,7 @@ namespace core {
     }
 
 
-    inline SQLLEN SQLRowCount( _Inout_ hdb_stmt* stmt TSRMLS_DC )
+    inline SQLLEN SQLRowCount( _Inout_ hdb_stmt* stmt )
     {
         SQLRETURN r;
         SQLLEN rows_affected;
@@ -2240,7 +2240,7 @@ namespace core {
     }
 
 
-    inline void SQLSetConnectAttr( _Inout_ hdb_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len TSRMLS_DC )
+    inline void SQLSetConnectAttr( _Inout_ hdb_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len )
     {
         SQLRETURN r;
         r = ::SQLSetConnectAttr( ctx.handle(), attr, value_ptr, str_len );
@@ -2250,7 +2250,7 @@ namespace core {
         }
     }
 
-    inline void SQLSetDescField( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT rec_num, _In_ SQLSMALLINT fld_id, _In_reads_bytes_opt_( str_len ) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len  TSRMLS_DC )
+    inline void SQLSetDescField( _Inout_ hdb_stmt* stmt, _In_ SQLSMALLINT rec_num, _In_ SQLSMALLINT fld_id, _In_reads_bytes_opt_( str_len ) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len  )
     {
         SQLRETURN r;
         SQLHDESC hIpd = NULL;
@@ -2263,7 +2263,7 @@ namespace core {
         }
     }
 
-    inline void SQLSetEnvAttr( _Inout_ hdb_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len TSRMLS_DC )
+    inline void SQLSetEnvAttr( _Inout_ hdb_context& ctx, _In_ SQLINTEGER attr, _In_reads_bytes_opt_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len )
     {
         SQLRETURN r;
         r = ::SQLSetEnvAttr( ctx.handle(), attr, value_ptr, str_len );
@@ -2272,7 +2272,7 @@ namespace core {
         }
     }
 
-    inline void SQLSetConnectAttr( _Inout_ hdb_conn* conn, _In_ SQLINTEGER attribute, _In_reads_bytes_opt_(value_len) SQLPOINTER value_ptr, _In_ SQLINTEGER value_len TSRMLS_DC )
+    inline void SQLSetConnectAttr( _Inout_ hdb_conn* conn, _In_ SQLINTEGER attribute, _In_reads_bytes_opt_(value_len) SQLPOINTER value_ptr, _In_ SQLINTEGER value_len )
     {
         SQLRETURN r = ::SQLSetConnectAttr( conn->handle(), attribute, value_ptr, value_len ); 
         
@@ -2281,7 +2281,7 @@ namespace core {
         }
     }
         
-    inline void SQLSetStmtAttr( _Inout_ hdb_stmt* stmt, _In_ SQLINTEGER attr, _In_reads_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len TSRMLS_DC )
+    inline void SQLSetStmtAttr( _Inout_ hdb_stmt* stmt, _In_ SQLINTEGER attr, _In_reads_(str_len) SQLPOINTER value_ptr, _In_ SQLINTEGER str_len )
     {
         SQLRETURN r;
         r = ::SQLSetStmtAttr( stmt->handle(), attr, value_ptr, str_len );
@@ -2319,7 +2319,7 @@ namespace core {
     // If there is a zend function in the source that isn't found here, it is because it returns void and there is no error
     // that can be thrown from it.
 
-    inline void hdb_add_index_zval( _Inout_ hdb_context& ctx, _Inout_ zval* array, _In_ zend_ulong index, _In_ zval* value TSRMLS_DC) 
+    inline void hdb_add_index_zval( _Inout_ hdb_context& ctx, _Inout_ zval* array, _In_ zend_ulong index, _In_ zval* value) 
     {
         int zr = ::add_index_zval( array, index, value );
         CHECK_ZEND_ERROR( zr, ctx, HDB_ERROR_ZEND_HASH ) {
@@ -2327,7 +2327,7 @@ namespace core {
         }
     }
 
-    inline void hdb_add_next_index_zval( _Inout_ hdb_context& ctx, _Inout_ zval* array, _In_ zval* value TSRMLS_DC) 
+    inline void hdb_add_next_index_zval( _Inout_ hdb_context& ctx, _Inout_ zval* array, _In_ zval* value) 
     {
         int zr = ::add_next_index_zval( array, value );
         CHECK_ZEND_ERROR( zr, ctx, HDB_ERROR_ZEND_HASH ) {
@@ -2335,34 +2335,34 @@ namespace core {
         }
     }
 
-    inline void hdb_add_assoc_null( _Inout_ hdb_context& ctx, _Inout_ zval* array_z, _In_ const char* key TSRMLS_DC )
+    inline void hdb_add_assoc_null( _Inout_ hdb_context& ctx, _Inout_ zval* array_z, _In_ const char* key )
     {
-        int zr = ::add_assoc_null( array_z, key );
-        CHECK_ZEND_ERROR (zr, ctx, HDB_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
+        // int zr = ::add_assoc_null( array_z, key );
+        // CHECK_ZEND_ERROR (zr, ctx, HDB_ERROR_ZEND_HASH ) {
+        //     throw CoreException();
+        // }
     }
 
-    inline void hdb_add_assoc_long( _Inout_ hdb_context& ctx, _Inout_ zval* array_z, _In_ const char* key, _In_ zend_long val TSRMLS_DC )
+    inline void hdb_add_assoc_long( _Inout_ hdb_context& ctx, _Inout_ zval* array_z, _In_ const char* key, _In_ zend_long val )
     {
-        int zr = ::add_assoc_long( array_z, key, val );
-        CHECK_ZEND_ERROR (zr, ctx, HDB_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
+        // int zr = ::add_assoc_long( array_z, key, val );
+        // CHECK_ZEND_ERROR (zr, ctx, HDB_ERROR_ZEND_HASH ) {
+        //     throw CoreException();
+        // }
     }
 
-    inline void hdb_add_assoc_string( _Inout_ hdb_context& ctx, _Inout_ zval* array_z, _In_ const char* key, _Inout_z_ char* val, _In_ bool duplicate TSRMLS_DC )
+    inline void hdb_add_assoc_string( _Inout_ hdb_context& ctx, _Inout_ zval* array_z, _In_ const char* key, _Inout_z_ char* val, _In_ bool duplicate )
     {
-        int zr = ::add_assoc_string(array_z, key, val);
-        CHECK_ZEND_ERROR (zr, ctx, HDB_ERROR_ZEND_HASH ) {
-            throw CoreException();
-        }
+        // int zr = ::add_assoc_string(array_z, key, val);
+        // CHECK_ZEND_ERROR (zr, ctx, HDB_ERROR_ZEND_HASH ) {
+        //     throw CoreException();
+        // }
         if (duplicate == 0) {
             hdb_free(val);
         }
     }
 
-    inline void hdb_array_init( _Inout_ hdb_context& ctx, _Out_ zval* new_array TSRMLS_DC) 
+    inline void hdb_array_init( _Inout_ hdb_context& ctx, _Out_ zval* new_array) 
     {
         array_init(new_array);
         int zr = SUCCESS;
@@ -2371,7 +2371,7 @@ namespace core {
         }
     }
 
-    inline void hdb_php_stream_from_zval_no_verify( _Inout_ hdb_context& ctx, _Outref_result_maybenull_ php_stream*& stream, _In_opt_ zval* stream_z TSRMLS_DC )
+    inline void hdb_php_stream_from_zval_no_verify( _Inout_ hdb_context& ctx, _Outref_result_maybenull_ php_stream*& stream, _In_opt_ zval* stream_z )
     {
         // this duplicates the macro php_stream_from_zval_no_verify, which we can't use because it has an assignment
         php_stream_from_zval_no_verify( stream, stream_z );
@@ -2380,7 +2380,7 @@ namespace core {
         }
     }
 
-	inline void hdb_zend_hash_get_current_data( _In_ hdb_context& ctx, _In_ HashTable* ht, _Outref_result_maybenull_ zval*& output_data TSRMLS_DC)
+	inline void hdb_zend_hash_get_current_data( _In_ hdb_context& ctx, _In_ HashTable* ht, _Outref_result_maybenull_ zval*& output_data)
 	{
 		int zr = (output_data = ::zend_hash_get_current_data(ht)) != NULL ? SUCCESS : FAILURE;
 		CHECK_ZEND_ERROR( zr, ctx, HDB_ERROR_ZEND_HASH ) {
@@ -2388,7 +2388,7 @@ namespace core {
 		}
 	}
 
-    inline void hdb_zend_hash_get_current_data_ptr( _Inout_ hdb_context& ctx, _In_ HashTable* ht, _Outref_result_maybenull_ void*& output_data TSRMLS_DC)
+    inline void hdb_zend_hash_get_current_data_ptr( _Inout_ hdb_context& ctx, _In_ HashTable* ht, _Outref_result_maybenull_ void*& output_data)
     {
         int zr = (output_data = ::zend_hash_get_current_data_ptr(ht)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR(zr, ctx, HDB_ERROR_ZEND_HASH) {
@@ -2396,7 +2396,7 @@ namespace core {
         }
     }
 
-    inline void hdb_zend_hash_index_del( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index TSRMLS_DC )
+    inline void hdb_zend_hash_index_del( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index )
     {
         int zr = ::zend_hash_index_del( ht, index );
         CHECK_ZEND_ERROR( zr, ctx, HDB_ERROR_ZEND_HASH ) {
@@ -2404,7 +2404,7 @@ namespace core {
         }
     }
    
-    inline void hdb_zend_hash_index_update( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_ zval* data_z TSRMLS_DC )
+    inline void hdb_zend_hash_index_update( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_ zval* data_z )
     {
         int zr = (data_z = ::zend_hash_index_update(ht, index, data_z)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR( zr, ctx, HDB_ERROR_ZEND_HASH ) {
@@ -2412,7 +2412,7 @@ namespace core {
         }
     }
 
-    inline void hdb_zend_hash_index_update_ptr( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_ void* pData TSRMLS_DC)
+    inline void hdb_zend_hash_index_update_ptr( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_ void* pData)
     {
         int zr = (pData = ::zend_hash_index_update_ptr(ht, index, pData)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR(zr, ctx, HDB_ERROR_ZEND_HASH) {
@@ -2421,7 +2421,7 @@ namespace core {
     }
 
 
-	inline void hdb_zend_hash_index_update_mem( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_reads_bytes_(size) void* pData, _In_ std::size_t size TSRMLS_DC)
+	inline void hdb_zend_hash_index_update_mem( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ zend_ulong index, _In_reads_bytes_(size) void* pData, _In_ std::size_t size)
 	{
 		int zr = (pData = ::zend_hash_index_update_mem(ht, index, pData, size)) != NULL ? SUCCESS : FAILURE;
 		CHECK_ZEND_ERROR(zr, ctx, HDB_ERROR_ZEND_HASH) {
@@ -2429,7 +2429,7 @@ namespace core {
 		}
 	}
     
-    inline void hdb_zend_hash_next_index_insert( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ zval* data TSRMLS_DC )
+    inline void hdb_zend_hash_next_index_insert( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ zval* data )
     {
         int zr = (data = ::zend_hash_next_index_insert(ht, data)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR( zr, ctx, HDB_ERROR_ZEND_HASH ) {
@@ -2437,7 +2437,7 @@ namespace core {
         }
     }
 
-	inline void hdb_zend_hash_next_index_insert_mem( _Inout_ hdb_context& ctx, _In_ HashTable* ht, _In_reads_bytes_(data_size) void* data, _In_ uint data_size TSRMLS_DC)
+	inline void hdb_zend_hash_next_index_insert_mem( _Inout_ hdb_context& ctx, _In_ HashTable* ht, _In_reads_bytes_(data_size) void* data, _In_ uint data_size)
 	{
 		int zr = (data = ::zend_hash_next_index_insert_mem(ht, data, data_size)) != NULL ? SUCCESS : FAILURE;
 		CHECK_ZEND_ERROR(zr, ctx, HDB_ERROR_ZEND_HASH) {
@@ -2445,7 +2445,7 @@ namespace core {
 		}
 	}
 
-    inline void hdb_zend_hash_next_index_insert_ptr( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ void* data TSRMLS_DC)
+    inline void hdb_zend_hash_next_index_insert_ptr( _Inout_ hdb_context& ctx, _Inout_ HashTable* ht, _In_ void* data)
     {
         int zr = (data = ::zend_hash_next_index_insert_ptr(ht, data)) != NULL ? SUCCESS : FAILURE;
         CHECK_ZEND_ERROR(zr, ctx, HDB_ERROR_ZEND_HASH) {
@@ -2454,21 +2454,21 @@ namespace core {
     }
    
     inline void hdb_zend_hash_init(hdb_context& ctx, _Inout_ HashTable* ht, _Inout_ uint32_t initial_size,
-        _In_ dtor_func_t dtor_fn, _In_ zend_bool persistent TSRMLS_DC )
+        _In_ dtor_func_t dtor_fn, _In_ zend_bool persistent )
     {
         ::zend_hash_init(ht, initial_size, NULL, dtor_fn, persistent);
     }
 
 template <typename Statement>
-hdb_stmt* allocate_stmt( _In_ hdb_conn* conn, _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC )
+hdb_stmt* allocate_stmt( _In_ hdb_conn* conn, _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver )
 {
-    return new ( hdb_malloc( sizeof( Statement ))) Statement( conn, h, e, driver TSRMLS_CC );
+    return new ( hdb_malloc( sizeof( Statement ))) Statement( conn, h, e, driver );
 }
 
 template <typename Connection>
-hdb_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver TSRMLS_DC )
+hdb_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* driver )
 {
-    return new ( hdb_malloc( sizeof( Connection ))) Connection( h, e, driver TSRMLS_CC );
+    return new ( hdb_malloc( sizeof( Connection ))) Connection( h, e, driver );
 }
 
 } // namespace core
@@ -2476,10 +2476,10 @@ hdb_conn* allocate_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* dri
 template <unsigned int Attr>
 struct str_conn_attr_func {
 
-    static void func( connection_option const* /*option*/, zval* value, _Inout_ hdb_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    static void func( connection_option const* /*option*/, zval* value, _Inout_ hdb_conn* conn, std::string& /*conn_str*/ )
     {
         try {
-            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )), static_cast<SQLINTEGER>( Z_STRLEN_P( value )) TSRMLS_CC );
+            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_STRVAL_P( value )), static_cast<SQLINTEGER>( Z_STRLEN_P( value )) );
         }
         catch ( core::CoreException& ) {
             throw;

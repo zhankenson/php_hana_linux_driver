@@ -11,7 +11,7 @@ namespace {
 
 // close a stream and free the PHP resources used by it
 
-int hdb_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ TSRMLS_DC )
+int hdb_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ )
 {
     hdb_stream* ss = static_cast<hdb_stream*>( stream->abstract );
     HDB_ASSERT( ss != NULL && ss->stmt != NULL, "hdb_stream_close: hdb_stream* ss was null." );
@@ -32,7 +32,7 @@ int hdb_stream_close( _Inout_ php_stream* stream, int /*close_handle*/ TSRMLS_DC
 // read from a hdb stream into the buffer provided by Zend.  The parameters for binary vs. char are
 // set when hdb_get_field is called by the user specifying which field type they want.
 
-ssize_t hdb_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count TSRMLS_DC )
+ssize_t hdb_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count) char* buf, _Inout_ size_t count )
 {
 	SQLLEN read = 0;
     SQLSMALLINT c_type = SQL_C_CHAR;
@@ -97,7 +97,7 @@ ssize_t hdb_stream_read( _Inout_ php_stream* stream, _Out_writes_bytes_(count) c
             SQLCHAR state[SQL_SQLSTATE_BUFSIZE] = { 0 };
             SQLSMALLINT len = 0;
 
-            ss->stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len TSRMLS_CC );
+            ss->stmt->current_results->get_diag_field( 1, SQL_DIAG_SQLSTATE, state, SQL_SQLSTATE_BUFSIZE, &len );
 
             if( read == SQL_NO_TOTAL ) {
                 HDB_ASSERT( is_truncated_warning( state ), "hdb_stream_read: truncation warning was expected but it "
@@ -200,7 +200,7 @@ php_stream_ops hdb_stream_ops = {
 // return value.  There is only one valid way to open a stream, using hdb_get_field on
 // certain field types.  A hdb stream may only be opened in read mode.
 static php_stream* hdb_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _In_ const char*, _In_ const char* mode, 
-                                         _In_opt_ int options, _In_ zend_string **, php_stream_context* STREAMS_DC TSRMLS_DC )
+                                         _In_opt_ int options, _In_ zend_string **, php_stream_context* STREAMS_DC )
 {
 
 #if ZEND_DEBUG
@@ -218,7 +218,7 @@ static php_stream* hdb_stream_opener( _In_opt_ php_stream_wrapper* wrapper, _In_
 
     // check for valid options
     if( options != REPORT_ERRORS ) { 
-        php_stream_wrapper_log_error( wrapper, options TSRMLS_CC, "Invalid option: no options except REPORT_ERRORS may be specified with a hdb stream" );
+        php_stream_wrapper_log_error( wrapper, options , "Invalid option: no options except REPORT_ERRORS may be specified with a hdb stream" );
         return NULL;
     }
 

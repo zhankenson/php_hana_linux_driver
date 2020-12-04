@@ -158,8 +158,8 @@ struct ss_hdb_conn : hdb_conn
     static int descriptor;
 
     // initialize with default values
-    ss_hdb_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv TSRMLS_DC ) : 
-        hdb_conn( h, e, drv, HDB_ENCODING_SYSTEM TSRMLS_CC ),
+    ss_hdb_conn( _In_ SQLHANDLE h, _In_ error_callback e, _In_ void* drv ) : 
+        hdb_conn( h, e, drv, HDB_ENCODING_SYSTEM ),
         stmts( NULL ),
         date_as_string( false ),
         in_transaction( false )
@@ -168,7 +168,7 @@ struct ss_hdb_conn : hdb_conn
 };
 
 // resource destructor
-void __cdecl hdb_conn_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC );
+void __cdecl hdb_conn_dtor( _Inout_ zend_resource *rsrc );
 
 //*********************************************************************************************************************************
 // Statement
@@ -182,17 +182,17 @@ struct hdb_fetch_field_name {
 
 struct stmt_option_ss_scrollable : public stmt_option_functor {
 
-    virtual void operator()( _Inout_ hdb_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z TSRMLS_DC );
+    virtual void operator()( _Inout_ hdb_stmt* stmt, stmt_option const* /*opt*/, _In_ zval* value_z );
 };
 
 // This object inherits and overrides the callbacks necessary
 struct ss_hdb_stmt : public hdb_stmt {
 
-    ss_hdb_stmt( _In_ hdb_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv TSRMLS_DC );
+    ss_hdb_stmt( _In_ hdb_conn* c, _In_ SQLHANDLE handle, _In_ error_callback e, _In_ void* drv );
 
     virtual ~ss_hdb_stmt( void );
 
-    void new_result_set( TSRMLS_D ); 
+    void new_result_set( ); 
 
     // driver specific conversion rules from a SQL Server/ODBC type to one of the HDB_PHPTYPE_* constants
     hdb_phptype sql_type_to_php_type( _In_ SQLINTEGER sql_type, _In_ SQLUINTEGER size, _In_ bool prefer_string_to_stream );
@@ -243,14 +243,14 @@ PHP_FUNCTION(hdb_rows_affected);
 PHP_FUNCTION(hdb_send_stream_data);
 
 // resource destructor
-void __cdecl hdb_stmt_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC );
+void __cdecl hdb_stmt_dtor( _Inout_ zend_resource *rsrc );
 
 // "internal" statement functions shared by functions in conn.cpp and stmt.cpp
-void bind_params( _Inout_ ss_hdb_stmt* stmt TSRMLS_DC );
+void bind_params( _Inout_ ss_hdb_stmt* stmt );
 bool hdb_stmt_common_execute( hdb_stmt* s, const SQLCHAR* sql_string, int sql_len, bool direct, const char* function 
-                                 TSRMLS_DC );
-void free_odbc_resources( ss_hdb_stmt* stmt TSRMLS_DC );
-void free_stmt_resource( _Inout_ zval* stmt_z TSRMLS_DC );
+                                 );
+void free_odbc_resources( ss_hdb_stmt* stmt );
+void free_stmt_resource( _Inout_ zval* stmt_z );
 
 //*********************************************************************************************************************************
 // Type Functions
@@ -379,7 +379,7 @@ enum SS_ERROR_CODES {
 
 extern ss_error SS_ERRORS[];
 
-bool ss_error_handler( _Inout_ hdb_context& ctx, _In_ unsigned int hdb_error_code, _In_ bool warning TSRMLS_DC, _In_opt_ va_list* print_args );
+bool ss_error_handler( _Inout_ hdb_context& ctx, _In_ unsigned int hdb_error_code, _In_ bool warning, _In_opt_ va_list* print_args );
 
 // *** extension error functions ***
 PHP_FUNCTION(hdb_errors);
@@ -399,13 +399,13 @@ SQLWCHAR* utf16_string_from_mbcs_string( _In_ unsigned int php_encoding, _In_rea
 
 // *** internal error macros and functions ***
 bool handle_error( hdb_context const* ctx, int log_subsystem, const char* function, 
-                   hdb_error const* ssphp TSRMLS_DC, ... );
+                   hdb_error const* ssphp, ... );
 void handle_warning( hdb_context const* ctx, int log_subsystem, const char* function, 
-                     hdb_error const* ssphp TSRMLS_DC, ... );
-void __cdecl hdb_error_dtor( zend_resource *rsrc TSRMLS_DC );
+                     hdb_error const* ssphp, ... );
+void __cdecl hdb_error_dtor( zend_resource *rsrc );
 
 // release current error lists and set to NULL
-inline void reset_errors( TSRMLS_D )
+inline void reset_errors( )
 {
     if( Z_TYPE( HDB_G( errors )) != IS_ARRAY && Z_TYPE( HDB_G( errors )) != IS_NULL ) {
         DIE( "hdb_errors contains an invalid type" );
@@ -428,7 +428,7 @@ inline void reset_errors( TSRMLS_D )
 }
 
 #define THROW_SS_ERROR( ctx, error_code, ... ) \
-    (void)call_error_handler( ctx, error_code TSRMLS_CC, false /*warning*/, ## __VA_ARGS__ ); \
+    (void)call_error_handler( ctx, error_code, false /*warning*/, ## __VA_ARGS__ ); \
     throw ss::SSException();
 
 
@@ -485,7 +485,7 @@ public:
 }
 
 // logger for ss_hdb called by the core layer when it wants to log something with the LOG macro
-void ss_hdb_log( _In_ unsigned int severity TSRMLS_DC, _In_opt_ const char* msg, _In_opt_ va_list* print_args );
+void ss_hdb_log( _In_ unsigned int severity, _In_opt_ const char* msg, _In_opt_ va_list* print_args );
 
 // subsystems that may report log messages.  These may be used to filter which systems write to the log to prevent noise.
 enum logging_subsystems {
@@ -511,7 +511,7 @@ namespace ss {
         }
     };
 
-    inline void zend_register_resource( _Inout_ zval& rsrc_result, _Inout_ void* rsrc_pointer, _In_ int rsrc_type, _In_opt_ const char* rsrc_name TSRMLS_DC)
+    inline void zend_register_resource( _Inout_ zval& rsrc_result, _Inout_ void* rsrc_pointer, _In_ int rsrc_type, _In_opt_ const char* rsrc_name)
     {
         int zr = (NULL != (Z_RES(rsrc_result) = ::zend_register_resource(rsrc_pointer, rsrc_type)) ? SUCCESS : FAILURE);
         CHECK_CUSTOM_ERROR(( zr == FAILURE ), reinterpret_cast<hdb_context*>( rsrc_pointer ), SS_HDB_ERROR_REGISTER_RESOURCE,
@@ -537,7 +537,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, _In_ char const* param_s
     H* h;
     
     // reset the errors from the previous API call
-    reset_errors( TSRMLS_C );
+    reset_errors( );
 
     if( ZEND_NUM_ARGS() > param_count + 1 ) {
         DIE( "Param count and argument count don't match." );
@@ -571,35 +571,35 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, _In_ char const* param_s
         switch( param_count ) {
 
             case 0:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc );
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc );
                 break;
 
             case 1:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0] ); 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0] ); 
                 break;
 
             case 2:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0], 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0], 
                                                 arr[1] );  
                 break;
 
             case 3:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0], 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0], 
                                                 arr[1], arr[2] );  
                 break;
             
             case 4:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0], 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0], 
                                                 arr[1], arr[2], arr[3] ); 
                 break;
 
             case 5:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0], 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0], 
                                                 arr[1], arr[2], arr[3], arr[4] );  
                 break;
 
             case 6:
-                result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, const_cast<char*>( param_spec ), &rsrc, arr[0], 
+                result = zend_parse_parameters( ZEND_NUM_ARGS(), const_cast<char*>( param_spec ), &rsrc, arr[0], 
                                                 arr[1], arr[2], arr[3], arr[4], arr[5] );  
                 break;
 
@@ -616,7 +616,7 @@ inline H* process_params( INTERNAL_FUNCTION_PARAMETERS, _In_ char const* param_s
         }
 
         // get the resource registered 
-        h = static_cast<H*>( zend_fetch_resource(Z_RES_P(rsrc) TSRMLS_CC, H::resource_name, H::descriptor ));
+        h = static_cast<H*>( zend_fetch_resource(Z_RES_P(rsrc), H::resource_name, H::descriptor ));
         
         CHECK_CUSTOM_ERROR(( h == NULL ), &error_ctx, SS_HDB_ERROR_INVALID_FUNCTION_PARAMETER, calling_func ) {
 

@@ -19,9 +19,9 @@ unsigned int current_log_subsystem = LOG_CONN;
 
 struct date_as_string_func {
 
-    static void func( connection_option const* /*option*/, _In_ zval* value, _Inout_ hdb_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    static void func( connection_option const* /*option*/, _In_ zval* value, _Inout_ hdb_conn* conn, std::string& /*conn_str*/ )
     {
-        TSRMLS_C;   // show as used to avoid a warning
+           // show as used to avoid a warning
 
         ss_hdb_conn* ss_conn = static_cast<ss_hdb_conn*>( conn );
 
@@ -36,7 +36,7 @@ struct date_as_string_func {
 
 struct conn_char_set_func {
 
-    static void func( connection_option const* /*option*/, _Inout_ zval* value, _Inout_ hdb_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    static void func( connection_option const* /*option*/, _Inout_ zval* value, _Inout_ hdb_conn* conn, std::string& /*conn_str*/ )
     {
          convert_to_string( value );
          const char* encoding = Z_STRVAL_P( value );
@@ -66,9 +66,9 @@ struct conn_char_set_func {
 
 struct bool_conn_str_func {
 
-    static void func( _In_ connection_option const* option, _In_ zval* value, hdb_conn* /*conn*/, _Out_ std::string& conn_str TSRMLS_DC )
+    static void func( _In_ connection_option const* option, _In_ zval* value, hdb_conn* /*conn*/, _Out_ std::string& conn_str )
     {
-        TSRMLS_C;
+        
         char const* val_str;
         if( zend_is_true( value )) {
             val_str = "yes";
@@ -85,9 +85,9 @@ struct bool_conn_str_func {
 
 struct int_conn_str_func {
 
-    static void func( _In_ connection_option const* option, _In_ zval* value, hdb_conn* /*conn*/, _Out_ std::string& conn_str TSRMLS_DC )
+    static void func( _In_ connection_option const* option, _In_ zval* value, hdb_conn* /*conn*/, _Out_ std::string& conn_str )
     {
-        TSRMLS_C;
+        
         HDB_ASSERT( Z_TYPE_P( value ) == IS_LONG, "An integer is expected for this keyword" ) 
 
         std::string val_str = std::to_string( Z_LVAL_P( value ));
@@ -102,11 +102,11 @@ struct int_conn_str_func {
 template <unsigned int Attr>
 struct int_conn_attr_func {
 
-    static void func( connection_option const* /*option*/, _In_ zval* value, _Inout_ hdb_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    static void func( connection_option const* /*option*/, _In_ zval* value, _Inout_ hdb_conn* conn, std::string& /*conn_str*/ )
     {
         try {
         
-            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_LVAL_P( value )), SQL_IS_UINTEGER TSRMLS_CC );
+            core::SQLSetConnectAttr( conn, Attr, reinterpret_cast<SQLPOINTER>( Z_LVAL_P( value )), SQL_IS_UINTEGER );
         }
         catch( core::CoreException& ) {
             throw;
@@ -117,10 +117,10 @@ struct int_conn_attr_func {
 template <unsigned int Attr>
 struct bool_conn_attr_func {
 
-    static void func( connection_option const* /*option*/, _In_ zval* value, _Inout_ hdb_conn* conn, std::string& /*conn_str*/ TSRMLS_DC )
+    static void func( connection_option const* /*option*/, _In_ zval* value, _Inout_ hdb_conn* conn, std::string& /*conn_str*/ )
     {
          try {
-             core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>((zend_long)zend_is_true(value)), SQL_IS_UINTEGER TSRMLS_CC);
+             core::SQLSetConnectAttr(conn, Attr, reinterpret_cast<SQLPOINTER>((zend_long)zend_is_true(value)), SQL_IS_UINTEGER);
         
         }
         catch( core::CoreException& ) {
@@ -132,15 +132,15 @@ struct bool_conn_attr_func {
 
 //// *** internal functions ***
 
-void hdb_conn_close_stmts( _Inout_ ss_hdb_conn* conn TSRMLS_DC );
+void hdb_conn_close_stmts( _Inout_ ss_hdb_conn* conn );
 void validate_conn_options( _Inout_ hdb_context& ctx, _In_ zval* user_options_z, _Inout_ char** uid, _Inout_ char** pwd, 
-                            _Inout_ HashTable* ss_conn_options_ht TSRMLS_DC );
-void validate_stmt_options( _Inout_ hdb_context& ctx, _Inout_ zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht TSRMLS_DC );
+                            _Inout_ HashTable* ss_conn_options_ht );
+void validate_stmt_options( _Inout_ hdb_context& ctx, _Inout_ zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht );
 void add_conn_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ size_t key_len, 
-                         _Inout_ HashTable* options_ht, _Inout_ zval* data TSRMLS_DC );
-void add_stmt_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ HashTable* options_ht, _Inout_ zval* data TSRMLS_DC );
-int get_conn_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z TSRMLS_DC );   
-int get_stmt_option_key( _In_ zend_string* key, _In_ size_t key_len TSRMLS_DC );
+                         _Inout_ HashTable* options_ht, _Inout_ zval* data );
+void add_stmt_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ HashTable* options_ht, _Inout_ zval* data );
+int get_conn_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z );   
+int get_stmt_option_key( _In_ zend_string* key, _In_ size_t key_len );
 
 }
 
@@ -233,7 +233,7 @@ PHP_FUNCTION ( hdb_connect )
     SET_FUNCTION_NAME( *g_ss_henv_cp );
     SET_FUNCTION_NAME( *g_ss_henv_ncp );
 
-    reset_errors( TSRMLS_C );
+    reset_errors( );
 
     const char* server = NULL;
     zval* options_z = NULL;
@@ -243,7 +243,7 @@ PHP_FUNCTION ( hdb_connect )
     zval conn_z;
     ZVAL_UNDEF(&conn_z);
     // get the server name and connection options
-    int result = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "s|a", &server, &server_len, &options_z );
+    int result = zend_parse_parameters( ZEND_NUM_ARGS(), "s|a", &server, &server_len, &options_z );
     
     CHECK_CUSTOM_ERROR(( result == FAILURE ), *g_ss_henv_cp, SS_HDB_ERROR_INVALID_FUNCTION_PARAMETER, "hdb_connect" ) {
         RETURN_FALSE;
@@ -259,26 +259,26 @@ PHP_FUNCTION ( hdb_connect )
         ALLOC_HASHTABLE( ss_conn_options_ht );
         
         core::hdb_zend_hash_init( *g_ss_henv_cp, ss_conn_options_ht, 10 /* # of buckets */, 
-                                 ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
+                                 ZVAL_PTR_DTOR, 0 /*persistent*/ );
    
         // Either of g_ss_henv_cp or g_ss_henv_ncp can be used to propagate the error.
-        ::validate_conn_options( *g_ss_henv_cp, options_z, &uid, &pwd, ss_conn_options_ht TSRMLS_CC );   
+        ::validate_conn_options( *g_ss_henv_cp, options_z, &uid, &pwd, ss_conn_options_ht );   
      
         // call the core connect function  
         conn = static_cast<ss_hdb_conn*>( core_hdb_connect( *g_ss_henv_cp, *g_ss_henv_ncp, &core::allocate_conn<ss_hdb_conn>,
                                                                   server, uid, pwd, ss_conn_options_ht, ss_error_handler,  
-                                                                  SS_CONN_OPTS, NULL, "hdb_connect" TSRMLS_CC )); 
+                                                                  SS_CONN_OPTS, NULL, "hdb_connect" )); 
         
         HDB_ASSERT( conn != NULL, "hdb_connect: Invalid connection returned.  Exception should have been thrown." );
         
         // create a bunch of statements
         ALLOC_HASHTABLE( stmts );
     
-        core::hdb_zend_hash_init( *g_ss_henv_cp, stmts, 5, NULL /* dtor */, 0 /* persistent */ TSRMLS_CC );
+        core::hdb_zend_hash_init( *g_ss_henv_cp, stmts, 5, NULL /* dtor */, 0 /* persistent */ );
 
         // register the connection with the PHP runtime 
         
-        ss::zend_register_resource(conn_z, conn, ss_hdb_conn::descriptor, ss_hdb_conn::resource_name TSRMLS_CC);
+        ss::zend_register_resource(conn_z, conn, ss_hdb_conn::descriptor, ss_hdb_conn::resource_name);
 
         conn->stmts = stmts;
         stmts.transferred();
@@ -339,7 +339,7 @@ PHP_FUNCTION( hdb_begin_transaction )
 
     try {
 
-        core_hdb_begin_transaction( conn TSRMLS_CC );
+        core_hdb_begin_transaction( conn );
         conn->in_transaction = true;
         RETURN_TRUE;
     }
@@ -378,7 +378,7 @@ PHP_FUNCTION( hdb_close )
     ss_hdb_conn* conn = NULL;
     hdb_context_auto_ptr error_ctx;
 
-    reset_errors( TSRMLS_C );
+    reset_errors( );
     
     try {
         
@@ -386,10 +386,10 @@ PHP_FUNCTION( hdb_close )
         error_ctx = new (hdb_malloc( sizeof( hdb_context ))) hdb_context( 0, ss_error_handler, NULL );
         SET_FUNCTION_NAME( *error_ctx );
 
-        if( zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r", &conn_r) == FAILURE ) {
+        if( zend_parse_parameters(ZEND_NUM_ARGS(), "r", &conn_r) == FAILURE ) {
         
              // Check if it was a zval
-            int zr = zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "z", &conn_r );
+            int zr = zend_parse_parameters( ZEND_NUM_ARGS(), "z", &conn_r );
             CHECK_CUSTOM_ERROR(( zr == FAILURE ), error_ctx, SS_HDB_ERROR_INVALID_FUNCTION_PARAMETER, _FN_ ) {
                 throw ss::SSException();
             }   
@@ -403,7 +403,7 @@ PHP_FUNCTION( hdb_close )
             }
         }
         HDB_ASSERT( conn_r != NULL, "hdb_close: conn_r was null" );
-        conn = static_cast<ss_hdb_conn*>( zend_fetch_resource( Z_RES_P( conn_r ) TSRMLS_CC, ss_hdb_conn::resource_name, ss_hdb_conn::descriptor ));
+        conn = static_cast<ss_hdb_conn*>( zend_fetch_resource( Z_RES_P( conn_r ), ss_hdb_conn::resource_name, ss_hdb_conn::descriptor ));
 
         // if hdb_close was called on an already closed connection then we just return success.
         if ( Z_RES_TYPE_P( conn_r ) == RSRC_INVALID_TYPE) {
@@ -420,9 +420,9 @@ PHP_FUNCTION( hdb_close )
         // cause any variables still holding a reference to this to be invalid so they cause
         // an error when passed to a hdb function.  There's nothing we can do if the 
         // removal fails, so we just log it and move on.
-        if( zend_list_close( Z_RES_P( conn_r ) ) == FAILURE ) {
-            LOG( SEV_ERROR, "Failed to remove connection resource %1!d!", Z_RES_HANDLE_P( conn_r ));
-        }
+        // if( zend_list_close( Z_RES_P( conn_r ) ) == FAILURE ) {
+        //     LOG( SEV_ERROR, "Failed to remove connection resource %1!d!", Z_RES_HANDLE_P( conn_r ));
+        // }
 
         // when conn_r is first parsed in zend_parse_parameters, conn_r becomes a zval that points to a zend_resource with a refcount of 2
         // need to DELREF here so the refcount becomes 1 and conn_r can be appropriate destroyed by the garbage collector when it goes out of scope
@@ -442,7 +442,7 @@ PHP_FUNCTION( hdb_close )
     }
 }
 
-void __cdecl hdb_conn_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC )
+void __cdecl hdb_conn_dtor( _Inout_ zend_resource *rsrc )
 {
     LOG_FUNCTION( "hdb_conn_dtor" );
 
@@ -453,10 +453,10 @@ void __cdecl hdb_conn_dtor( _Inout_ zend_resource *rsrc TSRMLS_DC )
     SET_FUNCTION_NAME( *conn );
 
     // close all statements associated with the connection.
-    hdb_conn_close_stmts( conn TSRMLS_CC );
+    hdb_conn_close_stmts( conn );
 
     // close the connection itself.
-    core_hdb_close( conn TSRMLS_CC );
+    core_hdb_close( conn );
     
     rsrc->ptr = NULL;
 }
@@ -499,7 +499,7 @@ PHP_FUNCTION( hdb_commit )
     try {
 
         conn->in_transaction = false;
-        core_hdb_commit( conn TSRMLS_CC );
+        core_hdb_commit( conn );
         RETURN_TRUE;
 
     }
@@ -553,7 +553,7 @@ PHP_FUNCTION( hdb_rollback )
     try {
         
         conn->in_transaction = false;
-        core_hdb_rollback( conn TSRMLS_CC );
+        core_hdb_rollback( conn );
         RETURN_TRUE;
     }
     catch( core::CoreException& ){
@@ -580,13 +580,13 @@ PHP_FUNCTION( hdb_client_info )
     
     try {
 
-        //core_hdb_get_client_info( conn, return_value TSRMLS_CC );
+        //core_hdb_get_client_info( conn, return_value );
         
         // Add the hdb driver's file version
         //Declarations below eliminate compiler warnings about string constant to char* conversions
         const char* extver = "ExtensionVer";
         std::string filever = VER_FILEVERSION_STR;
-        core::hdb_add_assoc_string( *conn, return_value, extver, &filever[0], 1 /*duplicate*/ TSRMLS_CC );
+        core::hdb_add_assoc_string( *conn, return_value, extver, &filever[0], 1 /*duplicate*/ );
     }
 
     catch( core::CoreException& ) {
@@ -622,7 +622,7 @@ PHP_FUNCTION( hdb_server_info )
         ss_hdb_conn* conn = NULL;
         PROCESS_PARAMS( conn, "r", _FN_, 0 );
 
-        //core_hdb_get_server_info( conn, return_value TSRMLS_CC );
+        //core_hdb_get_server_info( conn, return_value );
     }
 
     catch( core::CoreException& ) {
@@ -691,9 +691,9 @@ PHP_FUNCTION( hdb_prepare )
             // Initialize the options array to be passed to the core layer
             ALLOC_HASHTABLE( ss_stmt_options_ht );
             core::hdb_zend_hash_init( *conn , ss_stmt_options_ht, 3 /* # of buckets */, 
-                                         ZVAL_PTR_DTOR, 0 /*persistent*/ TSRMLS_CC );
+                                         ZVAL_PTR_DTOR, 0 /*persistent*/ );
             
-            validate_stmt_options( *conn, options_z, ss_stmt_options_ht TSRMLS_CC );
+            validate_stmt_options( *conn, options_z, ss_stmt_options_ht );
         
         }
 
@@ -712,9 +712,9 @@ PHP_FUNCTION( hdb_prepare )
 
         stmt = static_cast<ss_hdb_stmt*>( core_hdb_create_stmt( conn, core::allocate_stmt<ss_hdb_stmt>, 
                                                                       ss_stmt_options_ht, SS_STMT_OPTS, 
-                                                                      ss_error_handler, NULL TSRMLS_CC ) );
+                                                                      ss_error_handler, NULL ) );
        
-        core_hdb_prepare( stmt, sql, sql_len TSRMLS_CC );
+        core_hdb_prepare( stmt, sql, sql_len );
         
         if (params_z) {
             stmt->params_z = (zval *)hdb_malloc(sizeof(zval));
@@ -724,13 +724,13 @@ PHP_FUNCTION( hdb_prepare )
         stmt->prepared = true;
 
         // register the statement with the PHP runtime        
-        ss::zend_register_resource( stmt_z, stmt, ss_hdb_stmt::descriptor, ss_hdb_stmt::resource_name TSRMLS_CC );
+        ss::zend_register_resource( stmt_z, stmt, ss_hdb_stmt::descriptor, ss_hdb_stmt::resource_name );
 
         // store the resource id with the connection so the connection 
         // can release this statement when it closes.
         zend_long next_index = zend_hash_next_free_element( conn->stmts );
   
-        core::hdb_zend_hash_index_update(*conn, conn->stmts, next_index, &stmt_z TSRMLS_CC);
+        core::hdb_zend_hash_index_update(*conn, conn->stmts, next_index, &stmt_z);
 
         stmt->conn_index = next_index;
 
@@ -748,7 +748,7 @@ PHP_FUNCTION( hdb_prepare )
             stmt->~ss_hdb_stmt();
         }
         if (!Z_ISUNDEF(stmt_z)) {
-            free_stmt_resource(&stmt_z TSRMLS_CC);
+            free_stmt_resource(&stmt_z);
         }
 
         RETURN_FALSE;
@@ -814,9 +814,9 @@ PHP_FUNCTION( hdb_query )
             // Initialize the options array to be passed to the core layer
             ALLOC_HASHTABLE( ss_stmt_options_ht );
             core::hdb_zend_hash_init( *conn , ss_stmt_options_ht, 3 /* # of buckets */, ZVAL_PTR_DTOR, 
-                                         0 /*persistent*/ TSRMLS_CC );
+                                         0 /*persistent*/ );
             
-            validate_stmt_options( *conn, options_z, ss_stmt_options_ht TSRMLS_CC );    
+            validate_stmt_options( *conn, options_z, ss_stmt_options_ht );    
         }
 
         if( params_z && Z_TYPE_P( params_z ) != IS_ARRAY ) {
@@ -834,7 +834,7 @@ PHP_FUNCTION( hdb_query )
 
         stmt = static_cast<ss_hdb_stmt*>( core_hdb_create_stmt( conn, core::allocate_stmt<ss_hdb_stmt>, 
                                                                       ss_stmt_options_ht, SS_STMT_OPTS, 
-                                                                      ss_error_handler, NULL TSRMLS_CC ) );
+                                                                      ss_error_handler, NULL ) );
 
         if( params_z ) {
             stmt->params_z = (zval *)hdb_malloc(sizeof(zval));
@@ -843,18 +843,18 @@ PHP_FUNCTION( hdb_query )
 
         stmt->set_func( "hdb_query" );
 
-        bind_params( stmt TSRMLS_CC );
+        bind_params( stmt );
 
         // execute the statement
-        core_hdb_execute( stmt TSRMLS_CC, sql, static_cast<int>( sql_len ) );
+        core_hdb_execute( stmt, sql, static_cast<int>( sql_len ) );
        
         // register the statement with the PHP runtime 
-        ss::zend_register_resource(stmt_z, stmt, ss_hdb_stmt::descriptor, ss_hdb_stmt::resource_name TSRMLS_CC);
+        ss::zend_register_resource(stmt_z, stmt, ss_hdb_stmt::descriptor, ss_hdb_stmt::resource_name);
         // store the resource id with the connection so the connection 
         // can release this statement when it closes.
         zend_ulong next_index = zend_hash_next_free_element( conn->stmts );
      
-        core::hdb_zend_hash_index_update(*conn, conn->stmts, next_index, &stmt_z TSRMLS_CC);
+        core::hdb_zend_hash_index_update(*conn, conn->stmts, next_index, &stmt_z);
         stmt->conn_index = next_index;
         stmt.transferred();
 
@@ -869,7 +869,7 @@ PHP_FUNCTION( hdb_query )
             stmt->~ss_hdb_stmt();
         }
         if (!Z_ISUNDEF(stmt_z)) {
-            free_stmt_resource(&stmt_z TSRMLS_CC);
+            free_stmt_resource(&stmt_z);
         }
 
         RETURN_FALSE;
@@ -880,11 +880,11 @@ PHP_FUNCTION( hdb_query )
     }
 }
 
-void free_stmt_resource( _Inout_ zval* stmt_z TSRMLS_DC )
+void free_stmt_resource( _Inout_ zval* stmt_z )
 {
-    if( FAILURE == zend_list_close( Z_RES_P( stmt_z ))) {
-        LOG(SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_HANDLE_P(stmt_z));
-    }
+    // if( FAILURE == zend_list_close( Z_RES_P( stmt_z ))) {
+    //     LOG(SEV_ERROR, "Failed to remove stmt resource %1!d!", Z_RES_HANDLE_P(stmt_z));
+    // }
     ZVAL_NULL( stmt_z );
     zval_ptr_dtor(stmt_z);
 }
@@ -896,7 +896,7 @@ namespace {
 // must close all statement handles opened by this connection before closing the connection
 // no errors are returned, since close should always succeed
 
-void hdb_conn_close_stmts( _Inout_ ss_hdb_conn* conn TSRMLS_DC )
+void hdb_conn_close_stmts( _Inout_ ss_hdb_conn* conn )
 {
     //pre-condition check
     HDB_ASSERT(( conn->handle() != NULL ), "hdb_conn_close_stmts: Connection handle is NULL. Trying to destroy an "
@@ -934,9 +934,9 @@ void hdb_conn_close_stmts( _Inout_ ss_hdb_conn* conn TSRMLS_DC )
 
         // this would call the destructor on the statement.
         // There's nothing we can do if the removal fails, so we just log it and move on.
-        if( zend_list_close( Z_RES_P(rsrc_ptr) ) == FAILURE ) {
-            LOG(SEV_ERROR, "Failed to remove statement resource %1!d! when closing the connection", Z_RES_HANDLE_P(rsrc_ptr));
-        }
+        // if( zend_list_close( Z_RES_P(rsrc_ptr) ) == FAILURE ) {
+        //     LOG(SEV_ERROR, "Failed to remove statement resource %1!d! when closing the connection", Z_RES_HANDLE_P(rsrc_ptr));
+        // }
     } ZEND_HASH_FOREACH_END();
 
     zend_hash_destroy( conn->stmts );
@@ -944,7 +944,7 @@ void hdb_conn_close_stmts( _Inout_ ss_hdb_conn* conn TSRMLS_DC )
     conn->stmts = NULL;
 }
 
-int get_conn_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z TSRMLS_DC )    
+int get_conn_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ size_t key_len, _Inout_ zval const* value_z )    
 {
     for( int i=0; SS_CONN_OPTS[ i ].conn_option_key != HDB_CONN_OPTION_INVALID; ++i )
     {
@@ -1005,7 +1005,7 @@ int get_conn_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ s
     return HDB_CONN_OPTION_INVALID;
 }
 
-int get_stmt_option_key( _In_ zend_string* key, _In_ size_t key_len TSRMLS_DC )
+int get_stmt_option_key( _In_ zend_string* key, _In_ size_t key_len )
 {
     for( int i = 0; SS_STMT_OPTS[ i ].key != HDB_STMT_OPTION_INVALID; ++i )
     {
@@ -1017,9 +1017,9 @@ int get_stmt_option_key( _In_ zend_string* key, _In_ size_t key_len TSRMLS_DC )
 }
 
 void add_stmt_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ size_t key_len, 
-                         _Inout_ HashTable* options_ht, _Inout_ zval* data TSRMLS_DC )
+                         _Inout_ HashTable* options_ht, _Inout_ zval* data )
 {
-    int option_key = ::get_stmt_option_key( key, key_len TSRMLS_CC );   
+    int option_key = ::get_stmt_option_key( key, key_len );   
     
     CHECK_CUSTOM_ERROR((option_key == HDB_STMT_OPTION_INVALID ), ctx, HDB_ERROR_INVALID_OPTION_KEY, ZSTR_VAL( key ) ) {
 
@@ -1027,27 +1027,27 @@ void add_stmt_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ 
     }        
 
     Z_TRY_ADDREF_P(data);      // inc the ref count since this is going into the options_ht too.
-    core::hdb_zend_hash_index_update( ctx, options_ht, option_key, data TSRMLS_CC );
+    core::hdb_zend_hash_index_update( ctx, options_ht, option_key, data );
 }
 
 void add_conn_option_key( _Inout_ hdb_context& ctx, _In_ zend_string* key, _In_ size_t key_len, 
-                         _Inout_ HashTable* options_ht, _Inout_ zval* data TSRMLS_DC )
+                         _Inout_ HashTable* options_ht, _Inout_ zval* data )
 {
-    int option_key = ::get_conn_option_key( ctx, key, key_len, data TSRMLS_CC );    
+    int option_key = ::get_conn_option_key( ctx, key, key_len, data );    
     CHECK_CUSTOM_ERROR((option_key == HDB_STMT_OPTION_INVALID ), ctx, SS_HDB_ERROR_INVALID_OPTION, ZSTR_VAL( key ) ) {
 
         throw ss::SSException();
     }        
 
     Z_TRY_ADDREF_P(data);      // inc the ref count since this is going into the options_ht too.
-    core::hdb_zend_hash_index_update( ctx, options_ht, option_key, data TSRMLS_CC );
+    core::hdb_zend_hash_index_update( ctx, options_ht, option_key, data );
 }
 
 // Iterates through the list of statement options provided by the user and validates them 
 // against the list of supported statement options by this driver. After validation
 // creates a Hashtable of statement options to be sent to the core layer for processing.
 
-void validate_stmt_options( _Inout_ hdb_context& ctx, _Inout_ zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht TSRMLS_DC )
+void validate_stmt_options( _Inout_ hdb_context& ctx, _Inout_ zval* stmt_options, _Inout_ HashTable* ss_stmt_options_ht )
 {
     try {
         if( stmt_options ) {
@@ -1069,7 +1069,7 @@ void validate_stmt_options( _Inout_ hdb_context& ctx, _Inout_ zval* stmt_options
                 }
                 else if ( key != NULL ) {
                     key_len = ZSTR_LEN( key ) + 1;
-                    add_stmt_option_key( ctx, key, key_len, ss_stmt_options_ht, data TSRMLS_CC );
+                    add_stmt_option_key( ctx, key, key_len, ss_stmt_options_ht, data );
                 }
                 else {
                     DIE( "validate_stmt_options: key was null." );
@@ -1087,7 +1087,7 @@ void validate_stmt_options( _Inout_ hdb_context& ctx, _Inout_ zval* stmt_options
 // against the predefined list of supported connection options by this driver. After validation
 // creates a Hashtable of connection options to be sent to the core layer for processing.
 
-void validate_conn_options( _Inout_ hdb_context& ctx, _In_ zval* user_options_z, _Inout_ char** uid, _Inout_ char** pwd, _Inout_ HashTable* ss_conn_options_ht TSRMLS_DC )
+void validate_conn_options( _Inout_ hdb_context& ctx, _In_ zval* user_options_z, _Inout_ char** uid, _Inout_ char** pwd, _Inout_ HashTable* ss_conn_options_ht )
 {
     try {
 
@@ -1122,7 +1122,7 @@ void validate_conn_options( _Inout_ hdb_context& ctx, _In_ zval* user_options_z,
                     }
                     else {
 
-                        ::add_conn_option_key( ctx, key, key_len, ss_conn_options_ht, data TSRMLS_CC );
+                        ::add_conn_option_key( ctx, key, key_len, ss_conn_options_ht, data );
                     }
                 }
                 else {

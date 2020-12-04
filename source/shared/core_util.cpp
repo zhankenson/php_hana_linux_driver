@@ -33,14 +33,14 @@ SQLCHAR SSPWARN[] = "01SSP";
 
 // write to the php log if the severity and subsystem match the filters currently set in the INI or 
 // the script (hdb_configure).
-void write_to_log( _In_ unsigned int severity TSRMLS_DC, _In_ const char* msg, ...)
+void write_to_log( _In_ unsigned int severity , _In_ const char* msg, ...)
 {
     HDB_ASSERT( !(g_driver_log == NULL), "Must register a driver log function." );
 
     va_list args;
     va_start( args, msg );
 
-    g_driver_log( severity TSRMLS_CC, msg, &args );
+    g_driver_log( severity , msg, &args );
 
     va_end( args );
 }
@@ -196,7 +196,7 @@ SQLWCHAR* utf16_string_from_mbcs_string( _In_ HDB_ENCODING php_encoding, _In_rea
 // The fetch type determines if the indices are numeric, associative, or both.
 
 bool core_hdb_get_odbc_error( _Inout_ hdb_context& ctx, _In_ int record_number, _Inout_ hdb_error_auto_ptr& error, _In_ logging_severity severity 
-                                 TSRMLS_DC )
+                                 )
 {
     SQLHANDLE h = ctx.handle();
     SQLSMALLINT h_type = ctx.handle_type();
@@ -273,7 +273,7 @@ bool core_hdb_get_odbc_error( _Inout_ hdb_context& ctx, _In_ int record_number, 
 
 // format and return a driver specfic error
 void core_hdb_format_driver_error( _In_ hdb_context& ctx, _In_ hdb_error_const const* custom_error, 
-                                      _Out_ hdb_error_auto_ptr& formatted_error, _In_ logging_severity severity TSRMLS_DC, _In_opt_ va_list* args )
+                                      _Out_ hdb_error_auto_ptr& formatted_error, _In_ logging_severity severity , _In_opt_ va_list* args )
 {
     // allocate space for the formatted message
     formatted_error = new (hdb_malloc( sizeof( hdb_error ))) hdb_error();
