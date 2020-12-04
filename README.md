@@ -5,7 +5,7 @@ rely on the HANA ODBC driver to handle the low-level communication.
 
 ## Prerequisites
 Install PHP on your Linux env:
-* install php and php-devel, make sure the php version is 7.4.
+* install php and php-devel, make sure the php version is 8.0.
 * gcc version must be grater than 4.9 
 
 Configure odbc library:
@@ -33,7 +33,7 @@ Under /test directory connect_and_query.php contains basic functions sample incl
 ## Dockerfile (example for docker php offical mirror)
 ```
 RUN mkdir -p /var/php_hana_linux_driver
-COPY ./HDB/php74_hana_linux_driver /var/php_hana_linux_driver
+COPY ./HDB/php80_hana_linux_driver /var/php_hana_linux_driver
 RUN cd /var/php_hana_linux_driver \ 
     && /bin/sh build.sh \
     && docker-php-ext-enable hdb
