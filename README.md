@@ -40,6 +40,6 @@ RUN cd /var/php_hana_linux_driver \
 ```
 
 ## Fix
-1.in /usr/local/include/php/Zend/zend_list.h, zend_list_close is return void
-2.in /usr/local/include/php/Zend/zend_API.h, add_assoc_* is return void
-3.remove TSRMLS_CC.this macro was defined empty in PHP 7.x, and removed in PHP 8.x.
+* 1.in /usr/local/include/php/Zend/zend_list.h, zend_list_close is return void
+* 2.in /usr/local/include/php/Zend/zend_API.h, add_assoc_* is return void
+* 3.remove TSRMLS_CC.this macro was defined empty in PHP 7.x, and removed in PHP 8.x.
