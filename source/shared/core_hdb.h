@@ -24,6 +24,13 @@
 #include "php_ini.h"
 #include "ext/standard/php_standard.h"
 #include "ext/standard/info.h"
+#include <php_version.h>
+
+#if PHP_VERSION_ID < 70400
+    #define PHP_SIZE_T "php_size_t"
+#else
+    #define PHP_SSIZE_T "php_ssize_t"
+#endif
 
 #ifndef _WIN32 // !_WIN32
 #include "FormattedPrint.h"

@@ -5,8 +5,8 @@ rely on the HANA ODBC driver to handle the low-level communication.
 
 ## Prerequisites
 Install PHP on your Linux env:
-* install php and php-devel, make sure the php version is 8.0.
-* gcc version must be grater than 4.9 
+* install php and php-devel, make sure the php version between 7.* and 8.0
+* gcc version must be grater than 4.9 (for php version > 7.2)
 
 Configure odbc library:
 * install HANA client to /usr/sap/hdbclient, configure path /usr/sap/hdbclient to environment parameter LD_LIBRARY_PATH and LIBRARY_PATH to make sure odbc shared library libodbcHDB.so can be used during run and compile.
@@ -41,5 +41,5 @@ RUN cd /var/php_hana_linux_driver \
 
 ## Fix
 1.in /usr/local/include/php/Zend/zend_list.h, zend_list_close is return void
-2.in /usr/local/include/php/Zend/zend_API.h, add_assoc_* is return void, like add_assoc_zval( ... ) == FAILURE will throw error
-3.remove TSRMLS_CC because this macro was defined empty in PHP 7.x, and removed in PHP 8.x.
+2.in /usr/local/include/php/Zend/zend_API.h, add_assoc_* is return void
+3.remove TSRMLS_CC.this macro was defined empty in PHP 7.x, and removed in PHP 8.x.
