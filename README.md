@@ -31,7 +31,7 @@ Under /test directory connect_and_query.php contains basic functions sample incl
  * hdb_free_stmt
  * hdb_close
 
-## Dockerfile (example for docker php offical mirror)
+## Dockerfile (example for docker php offical image)
 ```
 RUN mkdir -p /var/php_hana_linux_driver
 COPY ./HDB/php_hana_linux_driver /var/php_hana_linux_driver
