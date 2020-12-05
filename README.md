@@ -33,6 +33,20 @@ Under /test directory connect_and_query.php contains basic functions sample incl
 
 ## Dockerfile (example for docker php offical image)
 ```
+# install hdb_client
+COPY ./HDB/HDB_CLIENT_LINUX_X86_64.zip /var
+RUN cd /var \ 
+    && unzip HDB_CLIENT_LINUX_X86_64.zip \ 
+    && rm -rf HDB_CLIENT_LINUX_X86_64.zip \ 
+    && cd HDB_CLIENT_LINUX_X86_64 \ 
+    && chmod +x hdbinst && chmod +x hdbsetup && chmod +x hdbuninst && chmod +x instruntime/sdbrun \ 
+    && ./hdbinst -a client --path=/usr/sap/hdbclient \ 
+    && apt-get update \ 
+    && apt-get install -y libaio-dev \ 
+    && rm -rf /var/HDB_CLIENT_LINUX_X86_64 \ 
+    && ln -s /usr/sap/hdbclient/libodbcHDB.so /usr/lib/
+
+# install hdb-extension
 RUN mkdir -p /var/php_hana_linux_driver
 COPY ./HDB/php_hana_linux_driver /var/php_hana_linux_driver
 RUN cd /var/php_hana_linux_driver \ 
@@ -41,6 +55,6 @@ RUN cd /var/php_hana_linux_driver \
 ```
 
 ## Fix
-* 1.in /usr/local/include/php/Zend/zend_list.h, zend_list_close is return void
-* 2.in /usr/local/include/php/Zend/zend_API.h, add_assoc_* is return void
-* 3.remove TSRMLS_CC.this macro was defined empty in PHP 7.x, and removed in PHP 8.x.
+* in /usr/local/include/php/Zend/zend_list.h, zend_list_close is return void
+* in /usr/local/include/php/Zend/zend_API.h, add_assoc_* is return void
+* remove TSRMLS_CC.this macro was defined empty in PHP 7.x, and removed in PHP 8.x.
