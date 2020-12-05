@@ -46,7 +46,7 @@ RUN cd /var \
     && rm -rf /var/HDB_CLIENT_LINUX_X86_64 \ 
     && ln -s /usr/sap/hdbclient/libodbcHDB.so /usr/lib/
 
-# install hdb-extension
+# install php_hdb_extension
 RUN mkdir -p /var/php_hana_linux_driver
 COPY ./HDB/php_hana_linux_driver /var/php_hana_linux_driver
 RUN cd /var/php_hana_linux_driver \ 
