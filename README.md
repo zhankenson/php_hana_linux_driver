@@ -54,7 +54,7 @@ RUN cd /var/php_hana_linux_driver \
     && docker-php-ext-enable hdb
 ```
 
-## Fix
+## Remarks
 * in /usr/local/include/php/Zend/zend_list.h, zend_list_close is return void
 * in /usr/local/include/php/Zend/zend_API.h, add_assoc_* is return void
-* remove TSRMLS_CC.this macro was defined empty in PHP 7.x, and removed in PHP 8.x.
+* TSRMLS_CC macro was defined empty in PHP 7.x, and removed in PHP 8.x.
