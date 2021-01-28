@@ -5,7 +5,7 @@ rely on the HANA ODBC driver to handle the low-level communication.
 
 ## Prerequisites
 Install PHP on your Linux env:
-* install php and php-devel, make sure the php version between 7.x and 8.0
+* install php and php-devel, make sure the php version between 7.x and 8.0.x
 * gcc version must be grater than 8.3
 
 ## Configure odbc library
@@ -34,11 +34,8 @@ Under /test directory connect_and_query.php contains basic functions sample incl
 ## Dockerfile (example for docker php offical image)
 ```
 # install hdb_client
-COPY ./HDB/HDB_CLIENT_LINUX_X86_64.zip /var
-RUN cd /var \ 
-    && unzip HDB_CLIENT_LINUX_X86_64.zip \ 
-    && rm -rf HDB_CLIENT_LINUX_X86_64.zip \ 
-    && cd HDB_CLIENT_LINUX_X86_64 \ 
+COPY ./HDB/HDB_CLIENT_LINUX_X86_64 /var/HDB_CLIENT_LINUX_X86_64
+RUN cd /var/HDB_CLIENT_LINUX_X86_64 \ 
     && chmod +x hdbinst && chmod +x hdbsetup && chmod +x hdbuninst && chmod +x instruntime/sdbrun \ 
     && ./hdbinst -a client --path=/usr/sap/hdbclient \ 
     && apt-get update \ 
