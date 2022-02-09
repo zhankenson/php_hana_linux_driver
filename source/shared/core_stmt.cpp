@@ -139,22 +139,22 @@ hdb_stmt::hdb_stmt( _In_ hdb_conn* c, _In_ SQLHANDLE handle, _In_ error_callback
     core::hdb_array_init( *conn, &param_input_strings );
 
     // initialize the (input only) stream parameters (which holds hdb_stream structures)
-    ZVAL_NEW_ARR( &param_streams );
+    array_init( &param_streams );
     core::hdb_zend_hash_init(*conn, Z_ARRVAL( param_streams ), 5 /* # of buckets */, hdb_stream_dtor, 0 /*persistent*/ );
 
     // initialize the (input only) datetime parameters of converted date time objects to strings
     array_init( &param_datetime_buffers );
 
     // initialize the output string parameters (which holds hdb_output_param structures)
-    ZVAL_NEW_ARR( &output_params );
+    array_init( &output_params );
     core::hdb_zend_hash_init(*conn, Z_ARRVAL( output_params ), 5 /* # of buckets */, hdb_output_param_dtor, 0 /*persistent*/ );
 
     // initialize the col cache
-    ZVAL_NEW_ARR( &col_cache );
+    array_init( &col_cache );
     core::hdb_zend_hash_init( *conn, Z_ARRVAL(col_cache), 5 /* # of buckets */, col_cache_dtor, 0 /*persistent*/ );
 
     // initialize the field cache
-    ZVAL_NEW_ARR( &field_cache );
+    array_init( &field_cache );
     core::hdb_zend_hash_init(*conn, Z_ARRVAL(field_cache), 5 /* # of buckets */, field_cache_dtor, 0 /*persistent*/ );
 }
 
