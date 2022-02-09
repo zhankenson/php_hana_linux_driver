@@ -5,7 +5,7 @@ rely on the HANA ODBC driver to handle the low-level communication.
 
 ## Prerequisites
 Install PHP on your Linux env:
-* install php and php-devel, make sure the php version between 7.x and 8.0.x
+* install php and php-devel, make sure the php version between 7.x and 8.2
 * gcc version must be grater than 8.3
 
 ## Configure odbc library
@@ -55,3 +55,4 @@ RUN cd /var/php_hana_linux_driver \
 * in {location}/php/Zend/zend_list.h, zend_list_close is return void
 * in {location}/php/Zend/zend_API.h, add_assoc_* is return void
 * TSRMLS_CC macro was defined empty in PHP 7.x, and removed in PHP 8.x.
+* The ZVAL_NEW_ARR() macro has been removed. Use array_init() or ZVAL_ARR with zend_new_array() instead
