@@ -56,3 +56,6 @@ RUN cd /var/php_hana_linux_driver \
 * in {location}/php/Zend/zend_API.h, add_assoc_* is return void
 * TSRMLS_CC macro was defined empty in PHP 7.x, and removed in PHP 8.x.
 * The ZVAL_NEW_ARR() macro has been removed in PHP8.1. Use array_init() or ZVAL_ARR with zend_new_array() instead
+
+## License
+The Drivers for SAP HANA are licensed under the MIT license. See the LICENSE file for more details.
