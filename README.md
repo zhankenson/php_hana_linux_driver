@@ -33,7 +33,7 @@ Under /test directory connect_and_query.php contains basic functions sample incl
 
 ## Dockerfile (example for docker php offical image)
 ```
-# 首先你得下载好HDB_CLIENT应用，也就是下述的HDB_CLIENT_LINUX_X86_64
+# First you need to download the HDB_CLIENT application, which is called HDB_CLIENT_LINUX_X86_64
 
 # install hdb_client
 COPY ./HDB/HDB_CLIENT_LINUX_X86_64 /var/HDB_CLIENT_LINUX_X86_64
